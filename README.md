@@ -198,7 +198,213 @@ OSS_SECRET_KEY=xxx
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 许可证
+## 📄 License
+
+MIT License
+
+---
+
+# VidCraft AI - AI Video Generation Tool
+
+<p align="center">
+  <img src="assets/icon.png" width="120" alt="VidCraft AI Logo">
+</p>
+
+<p align="center">
+  <strong>Turning Imagination into Video</strong>
+</p>
+
+<p align="center">
+  Transform text descriptions into professional videos using AI, lowering the barrier to video creation
+</p>
+
+---
+
+## ✨ Core Features
+
+| Feature | Description |
+|------|------|
+| **Intelligent Description Enhancement** | AI automatically enhances scene details, turning simple descriptions into professional scripts |
+| **Automatic Storyboard Generation** | Automatically splits scenes based on descriptions, generating complete storyboard scripts |
+| **Multi-style Templates** | Various visual styles including film, animation, business, cyberpunk |
+| **AI Voiceovers & Music** | Multiple AI voice options + royalty-safe background music |
+| **One-click Generation & Export** | Automatically generate videos with support for multiple export formats |
+
+## 🏗️ Technical Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        VidCraft AI Architecture                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   Mobile App (React Native + Expo)                                   │
+│   ├── UI Components (NativeWind)                                    │
+│   ├── State Management (Zustand)                                    │
+│   └── API Client (Axios + React Query)                              │
+│                                                                      │
+│   Backend Services                                                   │
+│   ├── API Gateway (Kong)                                            │
+│   ├── User Service (NestJS)                                         │
+│   ├── Script Service (FastAPI + GPT-4)                              │
+│   ├── Video Service (FastAPI + Runway/可灵)                         │
+│   └── Worker Service (Celery)                                       │
+│                                                                      │
+│   Infrastructure                                                     │
+│   ├── Database (PostgreSQL)                                         │
+│   ├── Cache (Redis)                                                 │
+│   ├── Queue (RabbitMQ)                                              │
+│   └── Storage (OSS + CDN)                                           │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## 📱 Mobile Technology Stack
+
+| Technology | Version | Purpose |
+|------|------|------|
+| React Native | 0.73 | Cross-platform framework |
+| Expo | 50 | Development toolchain |
+| TypeScript | 5.1 | Type safety |
+| Zustand | 4.5 | State management |
+| React Query | 5.17 | Data fetching |
+| React Navigation | 6.x | Page navigation |
+| NativeWind | 2.0 | Styling solution |
+
+## 🚀 Quick Start
+
+### Requirements
+
+- Node.js 18+
+- npm or yarn
+- Expo CLI
+- iOS Simulator or Android Emulator
+
+### Install Dependencies
+
+```bash
+cd ai-video-generator
+npm install
+```
+
+### Start Development Server
+
+```bash
+npm start
+```
+
+### Run Application
+
+```bash
+# iOS
+npm run ios
+
+# Android
+npm run android
+```
+
+## 📁 Project Structure
+
+```
+ai-video-generator/
+├── docs/                     # Documentation directory
+│   ├── PRD.md               # Product Requirements Document
+│   ├── USER_STORIES.md      # User Stories
+│   ├── TECH_STACK.md        # Technology Stack Selection
+│   ├── UI_PROTOTYPE.md      # UI Prototype Design
+│   └── BACKEND_ARCHITECTURE.md  # Backend Architecture
+├── src/
+│   ├── components/          # Common components
+│   │   ├── ui/             # Basic UI components
+│   │   └── ProgressTracker.tsx
+│   ├── screens/            # Screen components
+│   │   ├── HomeScreen.tsx
+│   │   ├── CreateScreen.tsx
+│   │   └── ProgressScreen.tsx
+│   ├── services/           # API services
+│   │   └── api.ts
+│   ├── store/              # State management
+│   │   ├── authStore.ts
+│   │   └── projectStore.ts
+│   ├── types/              # Type definitions
+│   │   └── index.ts
+│   └── utils/              # Utility functions
+├── assets/                 # Static resources
+├── App.tsx                 # App entry point
+├── app.json               # Expo configuration
+├── package.json
+└── tsconfig.json
+```
+
+## 🎯 Core Workflow
+
+```
+User Input → AI Enhancement → Storyboard Generation → Style Selection → Voiceover & Music → Video Generation → Preview & Export
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create `.env` file:
+
+```bash
+# API
+API_BASE_URL=https://api.vidcraft.ai/api/v1
+
+# AI Services
+OPENAI_API_KEY=sk-xxx
+RUNWAY_API_KEY=xxx
+
+# Storage
+OSS_ACCESS_KEY=xxx
+OSS_SECRET_KEY=xxx
+```
+
+## 📖 Documentation
+
+- [Product Requirements Document (PRD)](docs/PRD.md)
+- [User Stories](docs/USER_STORIES.md)
+- [Technology Stack Selection](docs/TECH_STACK.md)
+- [UI Prototype Design](docs/UI_PROTOTYPE.md)
+- [Backend Architecture Design](docs/BACKEND_ARCHITECTURE.md)
+
+## 🛣️ Roadmap
+
+### MVP (v0.1)
+- [x] Basic UI framework
+- [x] User authentication flow
+- [x] Text description input
+- [x] AI Prompt enhancement
+- [x] Storyboard generation
+- [x] Video generation progress
+- [ ] Video preview playback
+- [ ] Video download & export
+
+### v0.2
+- [ ] Style template selection
+- [ ] AI voiceovers
+- [ ] Background music
+- [ ] Simple editing features
+
+### v0.3
+- [ ] Membership subscription system
+- [ ] Batch generation
+- [ ] Community sharing
+- [ ] Enterprise features
+
+## 💰 Business Model
+
+| Version | Price | Features |
+|------|------|------|
+| Free | ¥0 | 3/month, 720p, 30s, with watermark |
+| Professional | ¥99/month | 30/month, 1080p, 3min, no watermark |
+| Enterprise | ¥499/month | Unlimited, 4K, 5min, API access |
+
+## 🤝 Contributing
+
+Issues and Pull Requests are welcome!
+
+## 📄 License
 
 MIT License
 
