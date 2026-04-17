@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VidCraft AI - 智能视频创作平台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366F1;
+      --primary-dark: #4F46E5;
+      --primary-light: #818CF8;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --error: #EF4444;
+      --bg: #0F0F1A;
+      --bg-card: #1A1A2E;
+      --bg-input: #252542;
+      --text: #F9FAFB;
+      --text-secondary: #9CA3AF;
+      --border: #374151;
+      --gradient-1: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+      --gradient-2: linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 背景动效 */
+    .bg-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* 顶部导航 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+    }
+
+    .credits-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(99, 102, 241, 0.2);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary-light);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    /* 步骤指示器 */
+    .step-indicator {
+      margin-bottom: 24px;
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .step-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .step-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--bg-input);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gradient-1);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* 卡片 */
+    .card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-elevated {
+      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* 输入框 */
+    .textarea-container {
+      position: relative;
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 150px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 16px;
+      color: var(--text);
+      resize: none;
+      font-family: inherit;
+      line-height: 1.6;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .textarea::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .char-count {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* 灵感标签 */
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-input);
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .tag:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .tag.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* 按钮 */
+    .btn {
+      width: 100%;
+      padding: 18px 24px;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: var(--gradient-1);
+      color: white;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: var(--primary);
+    }
+
+    /* 页面样式 */
+    .page {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 增强结果页 */
+    .enhance-result {
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .enhance-label {
+      font-size: 12px;
+      color: var(--primary-light);
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .enhance-text {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+
+    .original-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    /* 分镜卡片 */
+    .storyboard-item {
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .storyboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .storyboard-number {
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .storyboard-duration {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .storyboard-preview {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5a 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .storyboard-preview::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      100% { left: 100%; }
+    }
+
+    .storyboard-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 风格选择 */
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .style-item {
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .style-item:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+    }
+
+    .style-item.selected {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.2);
+    }
+
+    .style-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+
+    .style-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* 进度页面 */
+    .progress-page {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .progress-icon {
+      font-size: 80px;
+      margin-bottom: 24px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .progress-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .progress-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .progress-circle-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 32px;
+    }
+
+    .progress-circle {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .progress-circle-bg {
+      fill: none;
+      stroke: var(--bg-input);
+      stroke-width: 12;
+    }
+
+    .progress-circle-fill {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 565.48;
+      stroke-dashoffset: 565.48;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .progress-percentage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .progress-steps {
+      background: var(--bg-input);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: left;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .progress-step:last-child {
+      border-bottom: none;
+    }
+
+    .progress-step-icon {
+      font-size: 18px;
+    }
+
+    .progress-step-name {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .progress-step-status {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .progress-step.completed .progress-step-name {
+      color: var(--success);
+    }
+
+    .progress-step.active .progress-step-name {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    /* 完成页面 */
+    .complete-page {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .video-preview {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d1f4e 50%, #1a1a2e 100%);
+      border-radius: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-preview::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎬</text></svg>') center/30% no-repeat;
+      opacity: 0.3;
+    }
+
+    .play-button {
+      width: 80px;
+      height: 80px;
+      background: var(--gradient-1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      cursor: pointer;
+      transition: transform 0.3s;
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.5);
+      z-index: 1;
+    }
+
+    .play-button:hover {
+      transform: scale(1.1);
+    }
+
+    .video-info {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .video-info span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+    }
+
+    /* 提示信息 */
+    .tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(245, 158, 11, 0.1);
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 20px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .tip-icon {
+      font-size: 20px;
+    }
+
+    .tip-text {
+      font-size: 13px;
+      color: #FCD34D;
+      line-height: 1.6;
+    }
+
+    /* 底部导航 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(26, 26, 46, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .nav-item.active {
+      color: var(--primary-light);
+    }
+
+    .nav-item-icon {
+      font-size: 24px;
+    }
+
+    .nav-create {
+      width: 56px;
+      height: 56px;
+      background: var(--gradient-1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-top: -20px;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .nav-create:hover {
+      transform: scale(1.1);
+    }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: var(--primary);
+      animation: confetti-fall 3s ease-out forwards;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    @keyframes confetti-fall {
+      0% { 
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% { 
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 响应式 */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px;
+      }
+      
+      .step-title {
+        font-size: 20px;
+      }
+    }
+
+    /* 页面底部留白 */
+    .page-content {
+      padding-bottom: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🎬</span>
+        <span>VidCraft AI</span>
+      </div>
+      <div class="credits-badge">
+        <span>💎</span>
+        <span id="credits">3</span>
+      </div>
+    </header>
+
+    <!-- 页面1: 输入描述 -->
+    <div id="page1" class="page active">
+      <div class="page-content">
+        <div class="step-indicator">
+          <div class="step-header">
+            <span class="step-text">Step 1/4</span>
+          </div>
+          <h1 class="step-title">描述你的视频</h1>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 25%"></div>
+          </div>
+        </div>
+
+        <div class="card card-elevated">
+          <div class="textarea-container">
+            <textarea 
+              id="promptInput" 
+              class="textarea" 
+              placeholder="描述你想要的视频场景...&#10;&#10;例如：一个年轻人走在繁华的城市街道上，霓虹灯闪烁，下着小雨..."
+              maxlength="500"
+            ></textarea>
+            <span class="char-count"><span id="charCount">0</span>/500</span>
+          </div>
+        </div>
+
+        <div class="section-title">✨ 快速灵感</div>
+        <div class="tags-container">
+          <div class="tag" data-prompt="清晨的山间湖泊，薄雾缭绕，阳光穿透云层洒在水面上，倒映着远处的雪山，一只白鹭缓缓飞过">
+            <span>🌅</span><span>自然</span>
+          </div>
+          <div class="tag" data-prompt="繁华的东京涩谷街头，霓虹灯层层叠叠，行人匆匆穿梭，雨滴从天而降，灯光在水洼中晕染开来">
+            <span>🏙️</span><span>城市</span>
+          </div>
+          <div class="tag" data-prompt="一位孤独的旅人走在无垠的沙漠中，夕阳将天空染成橙红色，他的剪影拉得很长，远处是若隐若现的金字塔">
+            <span>🎬</span><span>电影</span>
+          </div>
+          <div class="tag" data-prompt="一款精致的智能手表在黑色大理石台面上缓缓旋转，周围有优雅的光影流动，展现其精密的工艺">
+            <span>🛍️</span><span>产品</span>
+          </div>
+          <div class="tag" data-prompt="浩瀚的宇宙中，地球缓缓自转，可以看到云层的流动和大陆的轮廓，银河系在背景中闪耀">
+            <span>📚</span><span>教育</span>
+          </div>
+          <div class="tag" data-prompt="古老的欧洲城堡在月光下显得神秘而庄严，猫头鹰从塔楼飞过，远处传来悠扬的钟声">
+            <span>🎭</span><span>故事</span>
+          </div>
+        </div>
+
+        <button id="enhanceBtn" class="btn btn-primary" disabled>
+          <span>✨</span>
+          <span>智能增强，生成脚本</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 页面2: AI增强确认 -->
+    <div id="page2" class="page">
+      <div class="page-content">
+        <div class="step-indicator">
+          <div class="step-header">
+            <span class="step-text">Step 2/4</span>
+          </div>
+          <h1 class="step-title">AI 智能增强</h1>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 50%"></div>
+          </div>
+        </div>
+
+        <div class="original-text">
+          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">原始描述</div>
+          <div id="originalPrompt"></div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 16px;">
+          <span style="font-size: 24px;">⬇️</span>
+          <span style="color: var(--primary-light); font-size: 14px; margin-left: 8px;">AI 已为您增强</span>
+        </div>
+
+        <div class="card">
+          <div class="enhance-label">
+            <span>✨</span> 增强后描述
+          </div>
+          <div id="enhancedPrompt" class="enhance-text"></div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <div class="card" style="flex: 1; padding: 16px; text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 4px;">🎬</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">电影质感</div>
+          </div>
+          <div class="card" style="flex: 1; padding: 16px; text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 4px;">⏱️</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">45秒</div>
+          </div>
+          <div class="card" style="flex: 1; padding: 16px; text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 4px;">🎞️</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">3个分镜</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button id="regenerateBtn" class="btn btn-secondary" style="flex: 1;">
+            <span>🔄</span> 重新生成
+          </button>
+          <button id="confirmEnhanceBtn" class="btn btn-primary" style="flex: 1;">
+            <span>✓</span> 确认并继续
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面3: 分镜预览 -->
+    <div id="page3" class="page">
+      <div class="page-content">
+        <div class="step-indicator">
+          <div class="step-header">
+            <span class="step-text">Step 3/4</span>
+          </div>
+          <h1 class="step-title">分镜脚本</h1>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 75%"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span style="color: var(--text-secondary); font-size: 14px;">总时长: 45秒 | 共 3 个分镜</span>
+        </div>
+
+        <div id="storyboardList">
+          <!-- 分镜将动态生成 -->
+        </div>
+
+        <div class="section-title">🎨 选择风格</div>
+        <div class="style-grid">
+          <div class="style-item selected" data-style="cinematic">
+            <div class="style-icon">🎬</div>
+            <div class="style-name">电影质感</div>
+          </div>
+          <div class="style-item" data-style="anime">
+            <div class="style-icon">🌸</div>
+            <div class="style-name">日系治愈</div>
+          </div>
+          <div class="style-item" data-style="cyberpunk">
+            <div class="style-icon">🤖</div>
+            <div class="style-name">赛博朋克</div>
+          </div>
+          <div class="style-item" data-style="cartoon">
+            <div class="style-icon">🎨</div>
+            <div class="style-name">动画卡通</div>
+          </div>
+        </div>
+
+        <button id="generateBtn" class="btn btn-primary">
+          <span>🎬</span>
+          <span>开始生成视频 (消耗1次)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 页面4: 生成进度 -->
+    <div id="page4" class="page">
+      <div class="progress-page">
+        <div class="progress-icon">🎬</div>
+        <h2 class="progress-title">AI 正在为您创作...</h2>
+        <p class="progress-subtitle">这可能需要几分钟时间</p>
+
+        <div class="progress-circle-container">
+          <svg class="progress-circle" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#6366F1"/>
+                <stop offset="100%" stop-color="#A855F7"/>
+              </linearGradient>
+            </defs>
+            <circle class="progress-circle-bg" cx="100" cy="100" r="90"/>
+            <circle id="progressCircle" class="progress-circle-fill" cx="100" cy="100" r="90"/>
+          </svg>
+          <div id="progressPercent" class="progress-percentage">0%</div>
+        </div>
+
+        <div class="progress-steps">
+          <div class="progress-step completed" id="step-analyze">
+            <span class="progress-step-icon">✅</span>
+            <span class="progress-step-name">场景分析</span>
+            <span class="progress-step-status">完成</span>
+          </div>
+          <div class="progress-step active" id="step-scene1">
+            <span class="progress-step-icon">🔄</span>
+            <span class="progress-step-name">分镜 1 生成中</span>
+            <span class="progress-step-status">处理中...</span>
+          </div>
+          <div class="progress-step" id="step-scene2">
+            <span class="progress-step-icon">⏳</span>
+            <span class="progress-step-name">分镜 2</span>
+            <span class="progress-step-status">等待中</span>
+          </div>
+          <div class="progress-step" id="step-scene3">
+            <span class="progress-step-icon">⏳</span>
+            <span class="progress-step-name">分镜 3</span>
+            <span class="progress-step-status">等待中</span>
+          </div>
+          <div class="progress-step" id="step-compose">
+            <span class="progress-step-icon">⏳</span>
+            <span class="progress-step-name">视频合成</span>
+            <span class="progress-step-status">等待中</span>
+          </div>
+        </div>
+
+        <div class="tip">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">生成过程中您可以切换到其他页面，完成后会通知您</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 页面5: 完成预览 -->
+    <div id="page5" class="page">
+      <div class="complete-page">
+        <div class="step-indicator">
+          <h1 class="step-title">🎉 视频生成完成!</h1>
+        </div>
+
+        <div class="video-preview">
+          <div class="play-button" id="playBtn">▶️</div>
+        </div>
+
+        <div class="video-info">
+          <span>⏱️ 45秒</span>
+          <span>📐 1080p</span>
+          <span>🎬 电影质感</span>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-secondary" id="shareBtn">
+            <span>📤</span> 分享
+          </button>
+          <button class="btn btn-primary" id="downloadBtn">
+            <span>💾</span> 保存到相册
+          </button>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <button class="btn btn-secondary" id="newVideoBtn">
+            <span>➕</span> 创建新视频
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <div class="nav-item active">
+        <span class="nav-item-icon">🏠</span>
+        <span>首页</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-item-icon">🎬</span>
+        <span>发现</span>
+      </div>
+      <div class="nav-create" id="navCreate">➕</div>
+      <div class="nav-item">
+        <span class="nav-item-icon">📁</span>
+        <span>作品</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-item-icon">👤</span>
+        <span>我的</span>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    // 状态管理
+    const state = {
+      currentPage: 1,
+      originalPrompt: '',
+      enhancedPrompt: '',
+      selectedStyle: 'cinematic',
+      credits: 3,
+      progress: 0
+    };
+
+    // DOM 元素
+    const elements = {
+      promptInput: document.getElementById('promptInput'),
+      charCount: document.getElementById('charCount'),
+      enhanceBtn: document.getElementById('enhanceBtn'),
+      originalPrompt: document.getElementById('originalPrompt'),
+      enhancedPrompt: document.getElementById('enhancedPrompt'),
+      regenerateBtn: document.getElementById('regenerateBtn'),
+      confirmEnhanceBtn: document.getElementById('confirmEnhanceBtn'),
+      storyboardList: document.getElementById('storyboardList'),
+      generateBtn: document.getElementById('generateBtn'),
+      progressCircle: document.getElementById('progressCircle'),
+      progressPercent: document.getElementById('progressPercent'),
+      credits: document.getElementById('credits'),
+      playBtn: document.getElementById('playBtn'),
+      downloadBtn: document.getElementById('downloadBtn'),
+      shareBtn: document.getElementById('shareBtn'),
+      newVideoBtn: document.getElementById('newVideoBtn'),
+      navCreate: document.getElementById('navCreate')
+    };
+
+    // AI 增强模拟数据
+    const enhanceTemplates = {
+      default: `镜头缓缓推进，画面呈现电影级质感。
+
+**场景一（0:00-0:15）**
+广角镜头：晨曦中的自然景观逐渐显现，薄雾缭绕，阳光穿透云层，光线柔和而温暖。
+
+**场景二（0:15-0:30）**
+中景特写：主体元素细节展现，光影交织，色彩饱满而有层次，呈现出专业摄影的质感。
+
+**场景三（0:30-0:45）**
+慢动作收尾：镜头缓缓后拉，整体画面尽收眼底，配合柔和的环境音效，给人宁静深远之感。
+
+**风格建议**：电影质感、暖色调、浅景深
+**情绪氛围**：宁静、深邃、治愈`,
+
+      city: `镜头在雨夜的都市中穿梭，赛博朋克风格的霓虹光影。
+
+**场景一（0:00-0:15）**
+广角俯拍：繁华的都市街头，霓虹灯牌层层叠叠，红蓝紫色的光芒在雨幕中晕染开来，形成迷幻的光斑。
+
+**场景二（0:15-0:30）**
+中景跟拍：一位身穿深色风衣的年轻人独自漫步，他撑着透明长柄伞，伞面上跳动着无数光点。雨滴从伞沿滑落，在脚边溅起小小的水花。
+
+**场景三（0:30-0:45）**
+特写镜头：人物侧脸剪影清晰可见，海风吹动发丝，霓虹灯的倒影在他眼眸中闪烁，若有所思地凝视远方的高楼。
+
+**风格建议**：赛博朋克、高对比度、霓虹色调
+**情绪氛围**：孤独、沉思、都市感`
+    };
+
+    // 分镜数据
+    const storyboards = [
+      { id: 1, duration: 15, icon: '🌅', desc: '广角镜头：晨曦中的自然景观逐渐显现，薄雾缭绕，阳光穿透云层' },
+      { id: 2, duration: 20, icon: '🎬', desc: '中景特写：主体元素细节展现，光影交织，色彩饱满而有层次' },
+      { id: 3, duration: 10, icon: '✨', desc: '慢动作收尾：镜头缓缓后拉，整体画面尽收眼底，宁静深远' }
+    ];
+
+    // 显示页面
+    function showPage(pageNum) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page${pageNum}`).classList.add('active');
+      state.currentPage = pageNum;
+    }
+
+    // 更新字数
+    elements.promptInput.addEventListener('input', (e) => {
+      const length = e.target.value.length;
+      elements.charCount.textContent = length;
+      elements.enhanceBtn.disabled = length < 10;
+    });
+
+    // 灵感标签点击
+    document.querySelectorAll('.tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const prompt = tag.dataset.prompt;
+        elements.promptInput.value = prompt;
+        elements.charCount.textContent = prompt.length;
+        elements.enhanceBtn.disabled = false;
+        
+        document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+      });
+    });
+
+    // AI增强
+    elements.enhanceBtn.addEventListener('click', async () => {
+      const prompt = elements.promptInput.value;
+      if (prompt.length < 10) return;
+
+      elements.enhanceBtn.innerHTML = '<div class="spinner"></div><span>AI 正在分析...</span>';
+      elements.enhanceBtn.disabled = true;
+
+      state.originalPrompt = prompt;
+      
+      // 模拟AI处理
+      await sleep(2000);
+
+      // 选择增强模板
+      const isCity = prompt.includes('城市') || prompt.includes('街') || prompt.includes('霓虹');
+      state.enhancedPrompt = isCity ? enhanceTemplates.city : enhanceTemplates.default;
+      
+      elements.originalPrompt.textContent = state.originalPrompt;
+      elements.enhancedPrompt.innerHTML = state.enhancedPrompt.replace(/\n/g, '<br>');
+      
+      elements.enhanceBtn.innerHTML = '<span>✨</span><span>智能增强，生成脚本</span>';
+      elements.enhanceBtn.disabled = false;
+
+      showPage(2);
+    });
+
+    // 重新生成
+    elements.regenerateBtn.addEventListener('click', async () => {
+      elements.regenerateBtn.innerHTML = '<div class="spinner"></div>';
+      await sleep(1500);
+      // 这里可以生成不同的增强结果
+      elements.regenerateBtn.innerHTML = '<span>🔄</span> 重新生成';
+    });
+
+    // 确认增强
+    elements.confirmEnhanceBtn.addEventListener('click', () => {
+      renderStoryboards();
+      showPage(3);
+    });
+
+    // 渲染分镜
+    function renderStoryboards() {
+      elements.storyboardList.innerHTML = storyboards.map(sb => `
+        <div class="storyboard-item">
+          <div class="storyboard-header">
+            <span class="storyboard-number">分镜 ${sb.id}</span>
+            <span class="storyboard-duration">${sb.duration}秒</span>
+          </div>
+          <div class="storyboard-preview">${sb.icon}</div>
+          <div class="storyboard-desc">${sb.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    // 风格选择
+    document.querySelectorAll('.style-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.style-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        state.selectedStyle = item.dataset.style;
+      });
+    });
+
+    // 开始生成
+    elements.generateBtn.addEventListener('click', () => {
+      state.credits--;
+      elements.credits.textContent = state.credits;
+      showPage(4);
+      simulateProgress();
+    });
+
+    // 模拟生成进度
+    async function simulateProgress() {
+      const steps = [
+        { id: 'analyze', progress: 10 },
+        { id: 'scene1', progress: 35 },
+        { id: 'scene2', progress: 60 },
+        { id: 'scene3', progress: 85 },
+        { id: 'compose', progress: 100 }
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepEl = document.getElementById(`step-${step.id}`);
+        
+        // 更新当前步骤状态
+        if (i > 0) {
+          const prevStep = document.getElementById(`step-${steps[i-1].id}`);
+          prevStep.classList.remove('active');
+          prevStep.classList.add('completed');
+          prevStep.querySelector('.progress-step-icon').textContent = '✅';
+          prevStep.querySelector('.progress-step-status').textContent = '完成';
+        }
+        
+        stepEl.classList.add('active');
+        stepEl.querySelector('.progress-step-icon').textContent = '🔄';
+        stepEl.querySelector('.progress-step-status').textContent = '处理中...';
+
+        // 动画进度
+        await animateProgress(state.progress, step.progress);
+        state.progress = step.progress;
+        
+        await sleep(800);
+      }
+
+      // 完成最后一步
+      const lastStep = document.getElementById('step-compose');
+      lastStep.classList.remove('active');
+      lastStep.classList.add('completed');
+      lastStep.querySelector('.progress-step-icon').textContent = '✅';
+      lastStep.querySelector('.progress-step-status').textContent = '完成';
+
+      await sleep(500);
+      showPage(5);
+      createConfetti();
+    }
+
+    // 进度动画
+    async function animateProgress(from, to) {
+      const duration = 1000;
+      const start = performance.now();
+      const circumference = 565.48;
+
+      return new Promise(resolve => {
+        function update(currentTime) {
+          const elapsed = currentTime - start;
+          const progress = Math.min(elapsed / duration, 1);
+          const current = from + (to - from) * easeOutCubic(progress);
+          
+          elements.progressPercent.textContent = `${Math.round(current)}%`;
+          elements.progressCircle.style.strokeDashoffset = circumference - (current / 100) * circumference;
+
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          } else {
+            resolve();
+          }
+        }
+        requestAnimationFrame(update);
+      });
+    }
+
+    // 缓动函数
+    function easeOutCubic(x) {
+      return 1 - Math.pow(1 - x, 3);
+    }
+
+    // 撒花效果
+    function createConfetti() {
+      const colors = ['#6366F1', '#A855F7', '#EC4899', '#06B6D4', '#10B981'];
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + 'vw';
+          confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+          document.body.appendChild(confetti);
+          setTimeout(() => confetti.remove(), 3000);
+        }, i * 50);
+      }
+    }
+
+    // 播放按钮
+    elements.playBtn.addEventListener('click', () => {
+      alert('🎬 视频播放功能演示\n\n这里会播放生成的视频，当前为演示模式。');
+    });
+
+    // 下载按钮
+    elements.downloadBtn.addEventListener('click', () => {
+      alert('💾 视频已保存到相册！\n\n（演示模式）');
+    });
+
+    // 分享按钮
+    elements.shareBtn.addEventListener('click', () => {
+      alert('📤 分享功能\n\n可以分享到微信、抖音、微博等平台\n（演示模式）');
+    });
+
+    // 新建视频
+    elements.newVideoBtn.addEventListener('click', () => {
+      resetState();
+      showPage(1);
+    });
+
+    // 底部导航创建按钮
+    elements.navCreate.addEventListener('click', () => {
+      resetState();
+      showPage(1);
+    });
+
+    // 重置状态
+    function resetState() {
+      state.progress = 0;
+      elements.promptInput.value = '';
+      elements.charCount.textContent = '0';
+      elements.enhanceBtn.disabled = true;
+      elements.progressCircle.style.strokeDashoffset = 565.48;
+      elements.progressPercent.textContent = '0%';
+      
+      document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.progress-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+        step.querySelector('.progress-step-icon').textContent = '⏳';
+        step.querySelector('.progress-step-status').textContent = '等待中';
+      });
+      document.getElementById('step-analyze').classList.add('completed');
+      document.getElementById('step-analyze').querySelector('.progress-step-icon').textContent = '✅';
+      document.getElementById('step-analyze').querySelector('.progress-step-status').textContent = '完成';
+    }
+
+    // 工具函数
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  </script>
+</body>
+</html>
+
