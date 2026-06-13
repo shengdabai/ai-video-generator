@@ -4,20 +4,20 @@ Describe a video in one line — AI (Gemini) enhances the prompt and generates a
 
 ## Business Context
 
-- **Category:** security and governance tool
-- **Audience:** builders and operators who need safer repositories, cleaner handoffs, and repeatable security checks.
+- **Category:** content automation product
+- **Audience:** creators and small teams that want repeatable publishing, research, or video-production workflows.
 - **Repository status:** Public repository. Keep examples, docs, and issues free of credentials, private data, and machine-specific paths.
 - **Topics:** ai, ai-video, expo, gemini, react-native, storyboard, typescript, video-generation
 
 ## What This Project Is For
 
 - Describe a video in one line — AI (Gemini) enhances the prompt and generates a shot-by-shot storyboard. React Native + Expo app, TypeScript backend.
-- Find repository risks early without exposing secrets in reports.
-- Make security review repeatable across public and private codebases.
+- Move content work from ad hoc drafting to an inspectable production pipeline.
+- Preserve human review while automating mechanical research, drafting, or publishing steps.
 
 ## Where It Fits
 
-This repository belongs in the trust-and-safety layer of the workbench: it helps make code, configuration, and public handoffs safer before they are reused or shown to clients.
+This repository turns content work into a repeatable workflow: inputs, processing steps, review points, and outputs are visible enough to audit and improve.
 
 ## Technical Overview
 
