@@ -31,13 +31,13 @@ export function generateTokens(payload: JwtPayload): {
   const accessToken = jwt.sign(
     { ...payload, type: 'access' },
     env.JWT_SECRET,
-    { expiresIn: env.JWT_EXPIRES_IN as string & { __brand: 'StringValue' } } as jwt.SignOptions
+    { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions
   );
 
   const refreshToken = jwt.sign(
     { ...payload, type: 'refresh' },
-    env.JWT_SECRET,
-    { expiresIn: env.JWT_REFRESH_EXPIRES_IN as string & { __brand: 'StringValue' } } as jwt.SignOptions
+    env.JWT_REFRESH_SECRET,
+    { expiresIn: env.JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
   );
 
   return {
@@ -48,7 +48,11 @@ export function generateTokens(payload: JwtPayload): {
 }
 
 export function verifyToken(token: string, expectedType?: 'access' | 'refresh'): JwtPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
+  // Refresh tokens are signed with a dedicated secret; access tokens with the
+  // primary secret. Verify against the secret matching the expected type so a
+  // refresh token can never be presented as an access token (and vice versa).
+  const secret = expectedType === 'refresh' ? env.JWT_REFRESH_SECRET : env.JWT_SECRET;
+  const decoded = jwt.verify(token, secret) as JwtPayload;
 
   if (expectedType && decoded.type !== expectedType) {
     throw new Error(`Invalid token type: expected ${expectedType}`);

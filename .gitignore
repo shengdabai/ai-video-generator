@@ -3,24 +3,42 @@ dist/
 .DS_Store
 *.log
 .env
-.env.local
-.env.production
-.omc/
-__pycache__/
-.venv/
-target/
-# Codex governance: local secrets and machine state
-.env
 .env.*
 !.env.example
 !.env.*.example
+.env.local
+.env.production
+.omc/
+*-todo.md
+state*.json
+__pycache__/
+.venv/
+target/
+
+# Security: private keys and credentials
 *.pem
 *.p12
 *.pfx
 id_rsa
 id_dsa
 .npmrc
-.DS_Store
-.omc/
 .codex/
 .claude/local/
+
+# Databases / runtime data
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+*-journal
+server/data/
+data/
+
+# Build output
+server/dist/
+
+# Caches
+.expo/
+.cache/
