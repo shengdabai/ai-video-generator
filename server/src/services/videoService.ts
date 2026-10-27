@@ -3,7 +3,7 @@
  * Simulated video generation queue with progress tracking
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import db from '../db/database';
 
 interface GenerationTask {
@@ -75,18 +75,19 @@ function getCurrentStepName(progress: number): string {
   return GENERATION_STEPS[stepIndex].name;
 }
 
-export function createGenerationTask(projectId: string): { taskId: string; estimatedTime: number } {
+export function createGenerationTask(projectId: string, userId: string): { taskId: string; estimatedTime: number } {
   const taskId = uuidv4();
-
-  db.prepare(`
-    UPDATE video_projects SET status = 'processing', updated_at = datetime('now')
-    WHERE id = ?
-  `).run(projectId);
-
-  db.prepare(`
-    INSERT INTO generation_tasks (id, project_id, status, progress, current_step, started_at)
-    VALUES (?, ?, 'running', 0, 'preparing', datetime('now'))
-  `).run(taskId, projectId);
+  db.transaction(() => {
+    const project = db.prepare('SELECT status FROM video_projects WHERE id = ? AND user_id = ?')
+      .get(projectId, userId) as { status: string } | undefined;
+    if (!project) throw new Error('PROJECT_NOT_FOUND');
+    if (project.status === 'processing') throw new Error('ALREADY_PROCESSING');
+    const deducted = db.prepare('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0').run(userId);
+    if (!deducted.changes) throw new Error('NO_CREDITS');
+    db.prepare("UPDATE video_projects SET status = 'processing', updated_at = datetime('now') WHERE id = ?").run(projectId);
+    db.prepare(`INSERT INTO generation_tasks (id, project_id, status, progress, current_step, started_at)
+      VALUES (?, ?, 'running', 0, 'preparing', datetime('now'))`).run(taskId, projectId);
+  })();
 
   const existingTimer = activeTimers.get(projectId);
   if (existingTimer) {
@@ -99,23 +100,9 @@ export function createGenerationTask(projectId: string): { taskId: string; estim
   return { taskId, estimatedTime: 120 };
 }
 
-function simulateProgress(taskId: string, projectId: string): void {
-  let progress = 0;
-  const intervalMs = 2000;
-  const increment = Math.floor(Math.random() * 8) + 5;
-
-  const timer: NodeJS.Timeout = setInterval(() => {
-    progress = Math.min(progress + increment, 100);
-    const currentStep = getCurrentStepName(progress);
-    const remaining = Math.max(
-      0,
-      Math.round(((100 - progress) / increment) * (intervalMs / 1000))
-    );
-
-    if (progress >= 100) {
-      clearInterval(timer);
-      activeTimers.delete(projectId);
-
+/** Commit both completion records together, including recovery of legacy partial writes. */
+export function completeTask(taskId: string, projectId: string): void {
+  db.transaction(() => {
       db.prepare(`
         UPDATE generation_tasks
         SET status = 'completed', progress = 100, current_step = 'completed',
@@ -131,6 +118,27 @@ function simulateProgress(taskId: string, projectId: string): void {
             updated_at = datetime('now')
         WHERE id = ?
       `).run(projectId);
+  })();
+}
+
+function simulateProgress(taskId: string, projectId: string, initialProgress = 0): void {
+  let progress = Math.max(0, Math.min(100, initialProgress));
+  const intervalMs = 2000;
+  const increment = Math.floor(Math.random() * 8) + 5;
+
+  const timer: NodeJS.Timeout = setInterval(() => {
+    progress = Math.min(progress + increment, 100);
+    const currentStep = getCurrentStepName(progress);
+    const remaining = Math.max(
+      0,
+      Math.round(((100 - progress) / increment) * (intervalMs / 1000))
+    );
+
+    if (progress >= 100) {
+      clearInterval(timer);
+      activeTimers.delete(projectId);
+
+      completeTask(taskId, projectId);
     } else {
       db.prepare(`
         UPDATE generation_tasks
@@ -141,6 +149,26 @@ function simulateProgress(taskId: string, projectId: string): void {
   }, intervalMs);
 
   activeTimers.set(projectId, timer);
+}
+
+/** Resume the existing simulated jobs after a server restart without charging again. */
+export function resumePendingTasks(): number {
+  const partial = db.prepare(`SELECT t.id, t.project_id FROM generation_tasks t
+    JOIN video_projects p ON p.id = t.project_id
+    WHERE t.status = 'completed' AND p.status = 'processing'
+      AND NOT EXISTS (SELECT 1 FROM generation_tasks newer
+        WHERE newer.project_id = t.project_id AND newer.status = 'running')`).all() as Array<{id:string;project_id:string}>;
+  for (const task of partial) completeTask(task.id, task.project_id);
+  const tasks = db.prepare(`SELECT t.id, t.project_id, t.progress FROM generation_tasks t
+    JOIN video_projects p ON p.id = t.project_id
+    WHERE t.status = 'running' AND p.status = 'processing' ORDER BY t.created_at DESC`).all() as Array<{ id: string; project_id: string; progress: number }>;
+  let resumed = 0;
+  for (const task of tasks) {
+    if (activeTimers.has(task.project_id)) continue;
+    simulateProgress(task.id, task.project_id, task.progress);
+    resumed++;
+  }
+  return resumed;
 }
 
 export function cleanupTimers(): void {

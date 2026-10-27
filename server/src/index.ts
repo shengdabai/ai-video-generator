@@ -12,6 +12,7 @@ import userRoutes from './routes/users';
 import aiRoutes from './routes/ai';
 import videoRoutes from './routes/videos';
 import templateRoutes from './routes/templates';
+import { resumePendingTasks } from './services/videoService';
 
 const app = express();
 
@@ -87,6 +88,8 @@ app.use(
 );
 
 // ==================== Start Server ====================
+
+resumePendingTasks();
 
 app.listen(env.PORT, () => {
   process.stdout.write(`

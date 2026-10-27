@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db/database';
 import { createGenerationTask, getProgress } from '../services/videoService';
@@ -172,19 +172,14 @@ router.post('/:id/generate', authMiddleware, (req: Request, res: Response) => {
       return;
     }
 
-    const deductResult = db
-      .prepare('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0')
-      .run(req.user!.userId);
-
-    if (deductResult.changes === 0) {
-      res.status(403).json(apiResponse(null, '生成次数已用完，请升级会员', 403));
-      return;
-    }
-
-    const result = createGenerationTask(project.id);
+    const result = createGenerationTask(project.id, req.user!.userId);
 
     res.json(apiResponse(result, '视频开始生成'));
   } catch (error) {
+    if (error instanceof Error && error.message === 'NO_CREDITS') {
+      res.status(403).json(apiResponse(null, '生成次数已用完，请升级会员', 403));
+      return;
+    }
     res.status(500).json(apiResponse(null, '启动生成任务失败', 500));
   }
 });

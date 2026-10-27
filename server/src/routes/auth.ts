@@ -5,10 +5,10 @@
 
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db/database';
-import { generateTokens, verifyToken, authMiddleware, blacklistToken } from '../middleware/auth';
+import { generateTokens, verifyToken, authMiddleware, blacklistToken, isTokenBlacklisted } from '../middleware/auth';
 import { authLimiter, smsLimiter } from '../middleware/rateLimit';
 import { sendVerificationCode, verifyCode } from '../services/smsService';
 import { UserRow, USER_SAFE_COLUMNS } from '../types/database';
@@ -164,9 +164,13 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 router.post('/logout', authMiddleware, (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.slice(7);
-      blacklistToken(token);
+    if (authHeader?.startsWith('Bearer ')) blacklistToken(authHeader.slice(7));
+    const refreshToken = req.body?.refreshToken;
+    if (typeof refreshToken === 'string') {
+      let refresh;
+      try { refresh = verifyToken(refreshToken, 'refresh'); }
+      catch { /* Invalid/expired refresh cannot prevent access revocation. */ }
+      if (refresh && refresh.userId === req.user!.userId) blacklistToken(refreshToken);
     }
     res.json(apiResponse(null, '已退出登录'));
   } catch (error) {
@@ -188,8 +192,11 @@ router.post('/refresh', (req: Request, res: Response) => {
       return;
     }
 
+    if (isTokenBlacklisted(parsed.data.refreshToken)) throw new Error('Token revoked');
     const payload = verifyToken(parsed.data.refreshToken, 'refresh');
+    if (!db.prepare('SELECT id FROM users WHERE id = ?').get(payload.userId)) throw new Error('User removed');
     const tokens = generateTokens({ userId: payload.userId, phone: payload.phone });
+    blacklistToken(parsed.data.refreshToken);
 
     res.json(apiResponse(tokens, 'Token 已刷新'));
   } catch (error) {

@@ -4,7 +4,7 @@
  * In production, replace with real SMS provider (e.g., Aliyun SMS)
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import db from '../db/database';
 
 interface VerificationRecord {

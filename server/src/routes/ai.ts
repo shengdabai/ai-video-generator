@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { authMiddleware } from '../middleware/auth';
 import { aiLimiter } from '../middleware/rateLimit';
 import { enhancePrompt, generateStoryboard } from '../services/aiService';
