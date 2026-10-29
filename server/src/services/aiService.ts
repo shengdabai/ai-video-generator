@@ -16,8 +16,8 @@ interface StoryboardScene {
   index: number;
   prompt: string;
   duration: number;
-  camera: string;
-  movement: string;
+  camera: string | null;
+  movement: string | null;
 }
 
 interface StoryboardResult {
@@ -176,7 +176,20 @@ export async function generateStoryboard(
   try {
     const prompt = buildStoryboardPrompt(enhancedPrompt, clampedCount);
     const response = await callGemini(prompt);
-    return parseJsonResponse<StoryboardResult>(response);
+    const result = parseJsonResponse<StoryboardResult>(response);
+    const cameras = ['wide', 'medium', 'close-up', 'extreme-close-up'];
+    const movements = ['static', 'pan', 'tilt', 'zoom', 'track', 'push', 'pull'];
+    const scenes = result.scenes.map((scene) => ({
+      ...scene,
+      duration: Math.max(1, Math.min(60, Math.round(scene.duration))),
+      camera: cameras.includes(scene.camera ?? '') ? scene.camera : null,
+      movement: movements.includes(scene.movement ?? '') ? scene.movement : null,
+    }));
+    return {
+      ...result,
+      totalDuration: scenes.reduce((sum, scene) => sum + scene.duration, 0),
+      scenes,
+    };
   } catch (error) {
     if (!env.GEMINI_API_KEY) {
       return createFallbackStoryboard(enhancedPrompt, clampedCount);

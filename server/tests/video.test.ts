@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import db from '../src/db/database';
 import router from '../src/routes/videos';
 import { createGenerationTask, completeTask, cleanupTimers, getProgress } from '../src/services/videoService';
+const loadTypescript = require('../../tests/helpers/load-typescript.cjs');
 
 // afterEach wipes three tables; refuse to run against anything but the in-memory DB set by `npm test`.
 if (process.env.DB_PATH !== ':memory:') throw new Error('video tests require DB_PATH=:memory: (run `npm test`)');
@@ -66,6 +67,11 @@ test('project creation validates and persists edited scenes atomically', async (
   const body = { originalPrompt: 'fixture prompt', storyboards: [{ prompt: 'edited scene', duration: 7, cameraType: null, movement: 'pan' }] };
   assert.equal(create({...body, storyboards: []}).code, 400);
   assert.equal(create({...body, storyboards: [{...body.storyboards[0], duration: -1}]}).code, 400);
+  for (const invalid of [
+    { duration: 2.5 }, { duration: 61 }, { cameraType: 'overhead' }, { movement: 'orbit' },
+  ]) {
+    assert.equal(create({...body, storyboards: [{...body.storyboards[0], ...invalid}]}).code, 400);
+  }
   const result = create(body);
   assert.equal(result.code, 201);
   assert.equal(result.payload.data.generationMode, 'demo');
@@ -77,6 +83,56 @@ test('project creation validates and persists edited scenes atomically', async (
     assert.equal(create(body).code, 500);
     assert.deepEqual(db.prepare('SELECT count(*) AS n FROM video_projects').get(), before);
   } finally { db.exec('DROP TRIGGER fail_scene'); }
+});
+
+test('mocked AI storyboards are normalized before strict project creation', async () => {
+  fixture();
+  const durations = [2.4, 2.5, 0, -3, 60.4, 60.6, 999, 11];
+  const cameras = ['wide', 'medium', 'close-up', 'extreme-close-up', 'wide', 'wide', null, 'overhead'];
+  const movements = ['static', 'pan', 'tilt', 'zoom', 'track', 'push', 'pull', 'orbit'];
+  let aiCalls = 0;
+  const ai = loadTypescript('server/src/services/aiService.ts', {
+    '../config/env': { env: { GEMINI_API_KEY: 'fixture-only' } },
+    '@google/generative-ai': { GoogleGenerativeAI: class {
+      getGenerativeModel() {
+        return { generateContent: async () => {
+          aiCalls++;
+          return { response: { text: () => JSON.stringify({
+            totalDuration: 45,
+            scenes: durations.map((duration, i) => ({
+              index: i + 1, prompt: `fixture scene ${i + 1}`, duration,
+              camera: cameras[i], movement: movements[i],
+            })),
+          }) } };
+        } };
+      }
+    } },
+  });
+  const handler = router.stack.find((layer: any) => layer.route?.path === '/' && layer.route.methods.post)!.route!.stack.at(-1)!.handle;
+  const store = loadTypescript('src/store/projectStore.ts', { '@/services/api': {
+    generateStoryboard: () => ai.generateStoryboard('fixture enhanced prompt', 8),
+    createProject: async (body: unknown) => {
+      let code = 200; let payload: any;
+      const res = { status: (n: number) => { code = n; return res; }, json: (data: unknown) => { payload = data; } };
+      handler({ body, user: { userId: 'owner' } } as any, res as any, () => {});
+      assert.equal(code, 201);
+      return payload.data;
+    },
+    startGeneration: async () => ({}),
+  } }).useProjectStore;
+  store.getState().setOriginalPrompt('fixture original prompt');
+  store.getState().setEnhancedPrompt('fixture enhanced prompt');
+  const result = await store.getState().generateStoryboard();
+  assert.equal(aiCalls, 1);
+  assert.deepEqual(result.scenes.map((scene: any) => scene.duration), [2, 3, 1, 1, 60, 60, 60, 11]);
+  assert.deepEqual(result.scenes.map((scene: any) => scene.camera), [...cameras.slice(0, -1), null]);
+  assert.deepEqual(result.scenes.map((scene: any) => scene.movement), [...movements.slice(0, -1), null]);
+  assert.equal(result.totalDuration, 198);
+  const projectId = await store.getState().startGeneration();
+  const saved = db.prepare('SELECT duration, camera_type, movement FROM storyboards WHERE project_id = ? ORDER BY scene_index').all(projectId);
+  assert.deepEqual(saved, result.scenes.map((scene: any) => ({
+    duration: scene.duration, camera_type: scene.camera, movement: scene.movement,
+  })));
 });
 
 test('latest progress wins when tasks share the same second', () => {

@@ -74,3 +74,24 @@ test('generation sends only the edited storyboards, in their displayed order', a
   assert.equal(await store.getState().startGeneration(), 'fixture');
   assert.deepEqual(request.storyboards, [{ prompt: 'edited prompt', duration: 5, cameraType: null, movement: null }]);
 });
+
+test('generation omits empty storyboards after an empty AI response or deleting the final scene', async () => {
+  for (const deleteFinalScene of [false, true]) {
+    let request;
+    let generatedProject;
+    const store = loadTypescript('src/store/projectStore.ts', { '@/services/api': {
+      generateStoryboard: async () => ({ scenes: deleteFinalScene
+        ? [{ index: 1, prompt: 'fixture scene', duration: 5, camera: 'wide', movement: 'pan' }]
+        : [] }),
+      createProject: async (body) => { request = body; return { id: 'fixture' }; },
+      startGeneration: async (id) => { generatedProject = id; },
+    } }).useProjectStore;
+    store.getState().setEnhancedPrompt('fixture enhanced prompt');
+    await store.getState().generateStoryboard();
+    if (deleteFinalScene) store.getState().deleteStoryboard(0);
+
+    assert.equal(await store.getState().startGeneration(), 'fixture');
+    assert.equal(Object.hasOwn(JSON.parse(JSON.stringify(request)), 'storyboards'), false);
+    assert.equal(generatedProject, 'fixture');
+  }
+});

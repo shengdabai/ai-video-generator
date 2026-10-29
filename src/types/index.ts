@@ -157,8 +157,8 @@ export interface GenerateStoryboardResponse {
     index: number;
     prompt: string;
     duration: number;
-    camera: CameraType;
-    movement: CameraMovement;
+    camera: CameraType | null;
+    movement: CameraMovement | null;
   }>;
 }
 
