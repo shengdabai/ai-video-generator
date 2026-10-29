@@ -10,47 +10,51 @@ import {
   SafeAreaView,
 } from 'react-native';
 
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useProjectStore } from '@/store/projectStore';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
 
-type FilterTab = 'all' | 'completed' | 'generating' | 'draft';
+type FilterTab = 'all' | 'completed' | 'generating' | 'draft' | 'failed';
 
 interface VideoWork {
   id: string;
   title: string;
   duration: string;
   createdAt: string;
-  status: 'completed' | 'generating' | 'draft';
+  status: 'completed' | 'generating' | 'draft' | 'failed';
   progress?: number;
   thumbnail?: string;
 }
-
-const MOCK_WORKS: VideoWork[] = [
-  { id: '1', title: '城市夜雨漫步', duration: '0:45', createdAt: '昨天', status: 'completed' },
-  { id: '2', title: '海边日落', duration: '1:20', createdAt: '2天前', status: 'completed' },
-  { id: '3', title: '产品展示', duration: '0:30', createdAt: '3天前', status: 'completed' },
-  { id: '4', title: '新项目', duration: '', createdAt: '', status: 'generating', progress: 65 },
-  { id: '5', title: '教学演示', duration: '2:15', createdAt: '1周前', status: 'completed' },
-  { id: '6', title: '未完成项目', duration: '', createdAt: '2周前', status: 'draft' },
-];
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'completed', label: '已完成' },
   { key: 'generating', label: '生成中' },
   { key: 'draft', label: '草稿' },
+  { key: 'failed', label: '失败' },
 ];
 
 export const WorksScreen: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
-  const filteredWorks = MOCK_WORKS.filter((work) => {
+  const navigation = useNavigation();
+  const { projects, loadProjects, loadMoreProjects, isLoadingList, error } = useProjectStore();
+  useFocusEffect(React.useCallback(() => { void loadProjects(); }, [loadProjects]));
+  const filteredWorks: VideoWork[] = projects.map((project) => ({
+    id: project.id, title: project.title,
+    duration: project.duration ? `${Math.floor(project.duration / 60)}:${String(project.duration % 60).padStart(2, '0')}` : '',
+    createdAt: project.createdAt,
+    status: project.status === 'processing' ? 'generating' as const : project.status,
+  })).filter((work) => {
     if (activeFilter === 'all') return true;
     return work.status === activeFilter;
   });
 
   const renderWorkCard = ({ item }: { item: VideoWork }) => (
-    <TouchableOpacity style={styles.workCard} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.workCard} activeOpacity={0.8}
+      onPress={() => (navigation as any).navigate(item.status === 'generating' ? 'Progress' : 'Preview', { projectId: item.id })}>
       <View style={styles.thumbnailContainer}>
         {item.status === 'completed' && (
           <>
@@ -65,7 +69,7 @@ export const WorksScreen: React.FC = () => {
         {item.status === 'generating' && (
           <View style={[styles.thumbnail, styles.generatingThumbnail]}>
             <Text style={styles.generatingText}>生成中</Text>
-            <Text style={styles.generatingProgress}>{item.progress}%</Text>
+            <Text style={styles.generatingProgress}>进度请点开查看</Text>
             <View style={styles.loadingDots}>
               <View style={styles.dot} />
               <View style={styles.dot} />
@@ -73,10 +77,10 @@ export const WorksScreen: React.FC = () => {
             </View>
           </View>
         )}
-        {item.status === 'draft' && (
+        {(item.status === 'draft' || item.status === 'failed') && (
           <View style={[styles.thumbnail, styles.draftThumbnail]}>
             <Text style={styles.draftIcon}>📝</Text>
-            <Text style={styles.draftText}>草稿</Text>
+            <Text style={styles.draftText}>{item.status === 'failed' ? '生成失败' : '草稿'}</Text>
           </View>
         )}
       </View>
@@ -133,7 +137,11 @@ export const WorksScreen: React.FC = () => {
         </ScrollView>
       </View>
 
+      {error && <Text accessibilityRole="alert">{error}</Text>}
       <FlatList
+        refreshing={isLoadingList}
+        onRefresh={() => void loadProjects(true)}
+        onEndReached={() => void loadMoreProjects()}
         data={filteredWorks}
         renderItem={renderWorkCard}
         keyExtractor={(item) => item.id}

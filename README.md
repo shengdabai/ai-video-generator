@@ -14,6 +14,17 @@
 
 ---
 
+## 当前可运行范围 / Runtime status
+
+当前服务端仅运行演示队列，返回固定示例视频，不生成符合提示词的视频。演示任务不扣额度，零余额也能运行。
+接口用 `generationMode: "demo"` 标识演示；启动任务还返回 `creditsCharged: 0`。界面在启动和预览时显示演示提示。
+分镜修改会随项目创建请求保存，但演示视频不使用这些分镜。预览使用原生播放器；相册保存、配音和配乐合成尚未接入。
+此改动不追溯返还历史额度；接入真实供应商和历史额度处理需要另行确认。
+
+The backend currently runs a free demo queue returning a fixed sample clip, not prompt-generated video.
+Edited storyboards are persisted, but do not affect the demo clip. Native playback is wired; album export and audio synthesis remain unavailable.
+
+
 ## ✨ 核心功能
 
 | 功能 | 描述 |

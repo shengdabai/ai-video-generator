@@ -133,7 +133,7 @@ export const ProgressScreen: React.FC = () => {
 
         {/* 标题 */}
         <Text style={styles.title}>
-          {projectProgress?.status === 'failed' ? '视频生成失败' : 'AI 正在为您创作...'}
+          {projectProgress?.status === 'failed' ? '视频生成失败' : '正在运行演示（不扣额度）...'}
         </Text>
         <Text style={styles.subtitle}>
           {projectProgress?.status === 'failed'

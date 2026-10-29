@@ -70,6 +70,7 @@ export interface MusicConfig {
 
 /** 视频项目 */
 export interface VideoProject {
+  generationMode?: 'demo';
   id: string;
   userId: string;
   title: string;
@@ -93,6 +94,7 @@ export interface CreateProjectRequest {
   originalPrompt: string;
   enhancedPrompt?: string;
   storyboardId?: string;
+  storyboards?: Array<Pick<Storyboard, 'prompt' | 'duration' | 'cameraType' | 'movement'>>;
   styleTemplate?: VideoStyle;
   aspectRatio?: AspectRatio;
   voiceConfig?: VoiceConfig;

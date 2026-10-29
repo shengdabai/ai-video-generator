@@ -340,6 +340,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         aspectRatio: currentProject.aspectRatio,
         voiceConfig: currentProject.voiceConfig,
         musicConfig: currentProject.musicConfig,
+        storyboards: currentProject.storyboards.map(({ prompt, duration, cameraType, movement }) => ({
+          prompt, duration, cameraType, movement,
+        })),
       });
 
       // 2. 开始生成

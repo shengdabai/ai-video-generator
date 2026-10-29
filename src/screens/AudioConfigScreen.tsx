@@ -182,7 +182,7 @@ export const AudioConfigScreen: React.FC = () => {
 
       <View style={styles.bottomContainer}>
         <Button
-          title="🎬 开始生成视频 (消耗1次)"
+          title="🎬 运行演示（不扣额度）"
           onPress={handleGenerate}
           loading={isLoading}
           fullWidth

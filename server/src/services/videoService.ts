@@ -20,6 +20,7 @@ interface GenerationTask {
 }
 
 interface ProgressInfo {
+  generationMode: 'demo';
   projectId: string;
   status: string;
   progress: number;
@@ -75,15 +76,14 @@ function getCurrentStepName(progress: number): string {
   return GENERATION_STEPS[stepIndex].name;
 }
 
-export function createGenerationTask(projectId: string, userId: string): { taskId: string; estimatedTime: number } {
+export function createGenerationTask(projectId: string, userId: string): { taskId: string; estimatedTime: number; generationMode: 'demo'; creditsCharged: 0 } {
   const taskId = uuidv4();
   db.transaction(() => {
     const project = db.prepare('SELECT status FROM video_projects WHERE id = ? AND user_id = ?')
       .get(projectId, userId) as { status: string } | undefined;
     if (!project) throw new Error('PROJECT_NOT_FOUND');
     if (project.status === 'processing') throw new Error('ALREADY_PROCESSING');
-    const deducted = db.prepare('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0').run(userId);
-    if (!deducted.changes) throw new Error('NO_CREDITS');
+    // This queue only produces sample clips. Demo tasks must never consume credits.
     db.prepare("UPDATE video_projects SET status = 'processing', updated_at = datetime('now') WHERE id = ?").run(projectId);
     db.prepare(`INSERT INTO generation_tasks (id, project_id, status, progress, current_step, started_at)
       VALUES (?, ?, 'running', 0, 'preparing', datetime('now'))`).run(taskId, projectId);
@@ -97,12 +97,14 @@ export function createGenerationTask(projectId: string, userId: string): { taskI
 
   simulateProgress(taskId, projectId);
 
-  return { taskId, estimatedTime: 120 };
+  return { taskId, estimatedTime: 120, generationMode: 'demo', creditsCharged: 0 };
 }
 
 /** Commit both completion records together, including recovery of legacy partial writes. */
 export function completeTask(taskId: string, projectId: string): void {
   db.transaction(() => {
+      const task = db.prepare('SELECT id FROM generation_tasks WHERE id = ? AND project_id = ?').get(taskId, projectId);
+      if (!task) throw new Error('TASK_NOT_FOUND');
       db.prepare(`
         UPDATE generation_tasks
         SET status = 'completed', progress = 100, current_step = 'completed',
@@ -112,9 +114,9 @@ export function completeTask(taskId: string, projectId: string): void {
 
       db.prepare(`
         UPDATE video_projects
-        SET status = 'completed', duration = 45,
+        SET status = 'completed', duration = NULL,
             video_url = 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
-            thumbnail_url = 'https://picsum.photos/640/360',
+            thumbnail_url = NULL,
             updated_at = datetime('now')
         WHERE id = ?
       `).run(projectId);
@@ -127,24 +129,37 @@ function simulateProgress(taskId: string, projectId: string, initialProgress = 0
   const increment = Math.floor(Math.random() * 8) + 5;
 
   const timer: NodeJS.Timeout = setInterval(() => {
-    progress = Math.min(progress + increment, 100);
-    const currentStep = getCurrentStepName(progress);
-    const remaining = Math.max(
-      0,
-      Math.round(((100 - progress) / increment) * (intervalMs / 1000))
-    );
+    try {
+      progress = Math.min(progress + increment, 100);
+      const currentStep = getCurrentStepName(progress);
+      const remaining = Math.max(
+        0,
+        Math.round(((100 - progress) / increment) * (intervalMs / 1000))
+      );
 
-    if (progress >= 100) {
+      if (progress >= 100) {
+        clearInterval(timer);
+        activeTimers.delete(projectId);
+
+        completeTask(taskId, projectId);
+      } else {
+        const updated = db.prepare(`
+          UPDATE generation_tasks
+          SET progress = ?, current_step = ?, estimated_remaining = ?
+          WHERE id = ?
+        `).run(progress, currentStep, remaining, taskId);
+        if (!updated.changes) { clearInterval(timer); activeTimers.delete(projectId); }
+      }
+    } catch {
       clearInterval(timer);
       activeTimers.delete(projectId);
-
-      completeTask(taskId, projectId);
-    } else {
-      db.prepare(`
-        UPDATE generation_tasks
-        SET progress = ?, current_step = ?, estimated_remaining = ?
-        WHERE id = ?
-      `).run(progress, currentStep, remaining, taskId);
+      // A failed timer callback must not crash the process or expose SQL details.
+      try {
+        db.transaction(() => {
+          db.prepare("UPDATE generation_tasks SET status = 'failed', error_message = '演示任务失败', completed_at = datetime('now') WHERE id = ?").run(taskId);
+          db.prepare("UPDATE video_projects SET status = 'failed', updated_at = datetime('now') WHERE id = ?").run(projectId);
+        })();
+      } catch { /* Storage may be unavailable; stop the timer regardless. */ }
     }
   }, intervalMs);
 
@@ -183,7 +198,7 @@ export function getProgress(projectId: string): ProgressInfo | null {
     .prepare(`
       SELECT * FROM generation_tasks
       WHERE project_id = ?
-      ORDER BY created_at DESC
+      ORDER BY created_at DESC, rowid DESC
       LIMIT 1
     `)
     .get(projectId) as GenerationTask | undefined;
@@ -193,6 +208,7 @@ export function getProgress(projectId: string): ProgressInfo | null {
   }
 
   return {
+    generationMode: 'demo',
     projectId: task.project_id,
     status: task.status,
     progress: task.progress,

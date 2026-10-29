@@ -61,3 +61,16 @@ test('the storyboard screen deletes shared state only after the confirmation act
   confirmation[2].find((action) => action.style === 'destructive').onPress();
   assert.deepEqual(store.getState().currentProject.storyboards, []);
 });
+
+test('generation sends only the edited storyboards, in their displayed order', async () => {
+  let request;
+  const store = loadTypescript('src/store/projectStore.ts', { '@/services/api': {
+    createProject: async (body) => { request = body; return { id: 'fixture' }; },
+    startGeneration: async () => ({}),
+  } }).useProjectStore;
+  const scenes = [scene('removed', 1), { ...scene('edited', 2), prompt: 'edited prompt', cameraType: null, movement: null }];
+  store.setState({ currentProject: { ...store.getState().currentProject, storyboards: scenes } });
+  store.getState().deleteStoryboard(0);
+  assert.equal(await store.getState().startGeneration(), 'fixture');
+  assert.deepEqual(request.storyboards, [{ prompt: 'edited prompt', duration: 5, cameraType: null, movement: null }]);
+});
