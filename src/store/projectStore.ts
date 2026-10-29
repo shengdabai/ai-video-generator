@@ -54,6 +54,7 @@ interface ProjectState {
   setEnhancedPrompt: (prompt: string) => void;
   generateStoryboard: () => Promise<GenerateStoryboardResponse>;
   updateStoryboard: (index: number, updates: Partial<Storyboard>) => void;
+  deleteStoryboard: (index: number) => void;
   setStyle: (style: VideoStyle) => void;
   setAspectRatio: (ratio: AspectRatio) => void;
   setVoiceConfig: (config: VoiceConfig) => void;
@@ -267,6 +268,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }));
   },
 
+  deleteStoryboard: (index: number) => {
+    const { storyboards } = get().currentProject;
+    if (!Number.isInteger(index) || index < 0 || index >= storyboards.length) return;
+
+    set((state) => ({
+      currentProject: {
+        ...state.currentProject,
+        storyboards: state.currentProject.storyboards
+          .filter((_, sceneIndex) => sceneIndex !== index)
+          .map((scene, sceneIndex) => ({ ...scene, sceneIndex: sceneIndex + 1 })),
+      },
+    }));
+  },
+
   /**
    * 设置视频风格
    * Set video style template
@@ -328,7 +343,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       });
 
       // 2. 开始生成
-      const { taskId } = await apiClient.startGeneration(project.id);
+      await apiClient.startGeneration(project.id);
 
       set({
         isLoading: false,

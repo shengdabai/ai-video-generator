@@ -3,7 +3,7 @@
  * Video generation progress screen
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,12 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Button } from '@/components/ui/Button';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { useProjectStore } from '@/store/projectStore';
 import apiClient from '@/services/api';
+import { pollGenerationProgress } from '@/utils/pollGenerationProgress';
 
 /**
  * 生成进度页面
@@ -27,8 +28,10 @@ export const ProgressScreen: React.FC = () => {
   const route = useRoute();
   const { projectId } = route.params as { projectId: string };
   
-  const { generationProgress, updateProgress, isGenerating } = useProjectStore();
+  const { generationProgress, updateProgress } = useProjectStore();
   const [estimatedTime, setEstimatedTime] = useState<string>('');
+  const [pollError, setPollError] = useState(false);
+  const projectProgress = generationProgress?.projectId === projectId ? generationProgress : null;
   
   // 动画
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -40,17 +43,18 @@ export const ProgressScreen: React.FC = () => {
    */
   useEffect(() => {
     // 旋转动画
-    Animated.loop(
+    const rotation = Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
         duration: 3000,
         easing: Easing.linear,
         useNativeDriver: true,
       })
-    ).start();
+    );
+    rotation.start();
 
     // 脉冲动画
-    Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.1,
@@ -63,50 +67,41 @@ export const ProgressScreen: React.FC = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
-  }, []);
+    );
+    pulse.start();
+    return () => {
+      rotation.stop();
+      pulse.stop();
+    };
+  }, [rotateAnim, pulseAnim]);
 
   /**
    * 轮询进度
    * Poll for generation progress
    */
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    const pollProgress = async () => {
-      try {
-        const progress = await apiClient.getProgress(projectId);
+  useFocusEffect(useCallback(() => {
+    setEstimatedTime('');
+    setPollError(false);
+    return pollGenerationProgress(projectId, {
+      getProgress: (id) => apiClient.getProgress(id),
+      onProgress: (progress) => {
         updateProgress(progress);
-
-        // 更新预计时间
-        if (progress.estimatedRemaining) {
+        setPollError(false);
+        if (progress.estimatedRemaining != null) {
           const minutes = Math.floor(progress.estimatedRemaining / 60);
           const seconds = progress.estimatedRemaining % 60;
           setEstimatedTime(`${minutes}分${seconds}秒`);
+        } else {
+          setEstimatedTime('');
         }
-
-        // 完成或失败时跳转
-        if (progress.status === 'completed') {
-          clearInterval(intervalId);
-          (navigation as any).navigate('Preview', { projectId });
-        } else if (progress.status === 'failed') {
-          clearInterval(intervalId);
-        }
-      } catch (error) {
-        console.error('Failed to poll progress:', error);
-      }
-    };
-
-    // 立即执行一次
-    pollProgress();
-
-    // 每3秒轮询一次
-    intervalId = setInterval(pollProgress, 3000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [projectId]);
+      },
+      onCompleted: () => (navigation as any).replace('Preview', { projectId }),
+      onError: () => {
+        setPollError(true);
+        setEstimatedTime('');
+      },
+    });
+  }, [projectId, navigation, updateProgress]));
 
   const rotation = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -118,7 +113,7 @@ export const ProgressScreen: React.FC = () => {
    * Navigate back to home
    */
   const handleGoHome = () => {
-    navigation.navigate('Home' as never);
+    (navigation as any).navigate('Main', { screen: 'Home' });
   };
 
   return (
@@ -137,14 +132,20 @@ export const ProgressScreen: React.FC = () => {
         </Animated.View>
 
         {/* 标题 */}
-        <Text style={styles.title}>AI 正在为您创作...</Text>
-        <Text style={styles.subtitle}>这可能需要几分钟时间</Text>
+        <Text style={styles.title}>
+          {projectProgress?.status === 'failed' ? '视频生成失败' : 'AI 正在为您创作...'}
+        </Text>
+        <Text style={styles.subtitle}>
+          {projectProgress?.status === 'failed'
+            ? '请返回首页查看项目'
+            : pollError ? '暂时无法获取进度，正在重试' : '这可能需要几分钟时间'}
+        </Text>
 
         {/* 进度追踪器 */}
-        {generationProgress && (
+        {projectProgress && (
           <View style={styles.progressContainer}>
             <ProgressTracker
-              progress={generationProgress}
+              progress={projectProgress}
               estimatedTime={estimatedTime}
             />
           </View>
@@ -154,7 +155,7 @@ export const ProgressScreen: React.FC = () => {
         <View style={styles.tipCard}>
           <Text style={styles.tipIcon}>💡</Text>
           <Text style={styles.tipText}>
-            生成过程中您可以切换到其他页面，完成后会通知您
+            离开此页后，服务端会继续处理生成任务；返回此页后会刷新进度。
           </Text>
         </View>
       </View>
