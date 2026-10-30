@@ -50,8 +50,9 @@ export const TEMPLATES: Array<ProjectTemplate & { id: string; icon: string; titl
  */
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
+  const applyTemplate = useProjectStore((state) => state.applyTemplate);
   const { user } = useAuthStore();
-  const { projects, resetCurrentProject, applyTemplate } = useProjectStore();
+  const { projects, resetCurrentProject } = useProjectStore();
 
   /**
    * 开始创作

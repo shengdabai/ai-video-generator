@@ -47,7 +47,10 @@ test('pressing a Home template card applies that template and opens the create s
     '@/components/ui/Button': { Button: 'Button' },
     '@/store/authStore': { useAuthStore: () => ({ user: null }) },
     '@/store/projectStore': {
-      useProjectStore: () => ({ projects: [], resetCurrentProject: () => {}, applyTemplate: (t) => applied.push(t) }),
+      useProjectStore: (selector) => {
+        const state = { projects: [], resetCurrentProject: () => {}, applyTemplate: (t) => applied.push(t) };
+        return selector ? selector(state) : state;
+      },
     },
   });
 
