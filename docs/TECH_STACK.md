@@ -84,7 +84,7 @@
 | **网络请求** | Axios + React Query | 请求缓存和状态 |
 | **导航** | React Navigation 6 | 页面导航 |
 | **UI 组件** | NativeWind (TailwindCSS) | 样式方案 |
-| **视频播放** | expo-av | 视频播放器 |
+| **视频播放** | expo-video | 视频播放器 |
 | **本地存储** | MMKV | 高性能存储 |
 | **推送通知** | Expo Notifications | 推送服务 |
 | **支付** | RevenueCat | 跨平台订阅 |
