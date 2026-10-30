@@ -36,14 +36,14 @@ router.get('/me', authMiddleware, (req: Request, res: Response) => {
 
 const updateUserSchema = z.object({
   nickname: z.string().min(1).max(50).optional(),
-  avatarUrl: z.string().url().optional(),
+  avatarUrl: z.url().optional(),
 });
 
 router.put('/me', authMiddleware, (req: Request, res: Response) => {
   try {
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(apiResponse(null, parsed.error.errors[0].message, 400));
+      res.status(400).json(apiResponse(null, parsed.error.issues[0].message, 400));
       return;
     }
 
