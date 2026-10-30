@@ -30,7 +30,7 @@ export const StoryboardScreen: React.FC = () => {
         { text: '取消', style: 'cancel' },
         {
           text: '保存',
-          onPress: (text) => {
+          onPress: (text?: string) => {
             if (text) {
               updateStoryboard(index, { prompt: text });
             }
