@@ -108,7 +108,23 @@ function parseJsonResponse<T>(text: string): T {
     .replace(/```\s*/g, '')
     .trim();
 
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown parse error';
+    // Raw model output may echo user prompts (or anything pasted into them), so
+    // never log it in production. In non-production, surface a truncated preview
+    // to make LLM format drift diagnosable; in production log only safe metadata.
+    if (env.NODE_ENV !== 'production') {
+      const preview = cleaned.length > 500 ? `${cleaned.slice(0, 500)}…` : cleaned;
+      // eslint-disable-next-line no-console
+      console.error(`[aiService] Failed to parse model JSON response: ${reason}\nRaw response: ${preview}`);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error(`[aiService] Failed to parse model JSON response: ${reason} (length=${cleaned.length})`);
+    }
+    throw new Error(`Invalid AI JSON response: ${reason}`);
+  }
 }
 
 function createFallbackEnhance(userPrompt: string): EnhanceResult {
@@ -128,14 +144,27 @@ function createFallbackStoryboard(
   const cameras = ['wide', 'medium', 'close-up', 'wide'];
   const movements = ['pan', 'static', 'push', 'track'];
 
+  // Semantic placeholder beats (intro -> development -> climax -> resolution),
+  // not a raw slice of the prompt text. The full prompt is referenced once so
+  // the subject is preserved without producing meaningless truncated strings.
+  const beats = [
+    'Establishing shot that introduces the setting and mood',
+    'Develops the action and reveals key details',
+    'Rising tension toward the focal moment of the scene',
+    'Climactic beat with the strongest visual emphasis',
+    'Reaction and consequence following the climax',
+    'Wider context that grounds the moment in its world',
+    'Transitional beat bridging toward the conclusion',
+    'Closing shot that resolves the scene',
+  ];
+
+  const subject = enhancedPrompt.trim().split(/[.。!?！？]/)[0] || enhancedPrompt.trim();
+
   const scenes: StoryboardScene[] = Array.from(
     { length: sceneCount },
     (_, i) => ({
       index: i + 1,
-      prompt: `Scene ${i + 1}: ${enhancedPrompt.slice(
-        i * Math.floor(enhancedPrompt.length / sceneCount),
-        (i + 1) * Math.floor(enhancedPrompt.length / sceneCount)
-      )}`,
+      prompt: `Scene ${i + 1}: ${beats[i % beats.length]} — ${subject}.`,
       duration: baseDuration,
       camera: cameras[i % cameras.length],
       movement: movements[i % movements.length],

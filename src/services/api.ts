@@ -22,10 +22,20 @@ import {
   PaginatedResponse,
 } from '@/types';
 
-// API 基础配置
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:8000/api/v1' 
+// API 基础配置 / API base configuration
+//
+// Resolution order:
+//   1. EXPO_PUBLIC_API_URL  — set per environment (.env, EAS build profile, CI).
+//      Built into the Expo SDK; no extra dependency required.
+//   2. Built-in dev/prod defaults as a fallback.
+//
+// Set EXPO_PUBLIC_API_URL in a `.env` file or your EAS build profile to point
+// the app at a real backend, e.g. https://api.vidcraft.ai/api/v1
+const DEFAULT_API_BASE_URL = __DEV__
+  ? 'http://localhost:8000/api/v1'
   : 'https://api.vidcraft.ai/api/v1';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_BASE_URL;
 
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
