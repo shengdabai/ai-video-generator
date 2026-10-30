@@ -17,14 +17,30 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
-import { useProjectStore } from '@/store/projectStore';
+import { useProjectStore, ProjectTemplate } from '@/store/projectStore';
 
-/** 灵感模板 */
-const TEMPLATES = [
-  { id: '1', icon: '🎬', title: '电影预告片', description: '电影级叙事' },
-  { id: '2', icon: '📱', title: '短视频种草', description: '社交媒体爆款' },
-  { id: '3', icon: '📚', title: '教育演示', description: '可视化讲解' },
-  { id: '4', icon: '🛍️', title: '产品展示', description: '精美产品视频' },
+/** 灵感模板：点击后预填创作页的提示词、风格和画幅 */
+export const TEMPLATES: Array<ProjectTemplate & { id: string; icon: string; title: string; description: string }> = [
+  {
+    id: '1', icon: '🎬', title: '电影预告片', description: '电影级叙事',
+    prompt: '雨夜的城市街头，主角在霓虹灯下回头望向镜头，紧张的配乐中闪过追逐、对峙和爆炸的关键画面',
+    style: 'cinematic', aspectRatio: '16:9',
+  },
+  {
+    id: '2', icon: '📱', title: '短视频种草', description: '社交媒体爆款',
+    prompt: '明亮温暖的房间里，一只手打开精美的包装盒，特写展示新品细节和使用效果，节奏轻快',
+    style: 'minimal', aspectRatio: '9:16',
+  },
+  {
+    id: '3', icon: '📚', title: '教育演示', description: '可视化讲解',
+    prompt: '地球在太空中缓缓自转，镜头逐渐拉近，用简洁的动画演示四季变化和昼夜交替的原理',
+    style: 'business', aspectRatio: '16:9',
+  },
+  {
+    id: '4', icon: '🛍️', title: '产品展示', description: '精美产品视频',
+    prompt: '一款精致的手表在黑色大理石台面上缓缓旋转，周围有优雅的光影流动',
+    style: 'minimal', aspectRatio: '1:1',
+  },
 ];
 
 /**
@@ -33,6 +49,7 @@ const TEMPLATES = [
  */
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
+  const applyTemplate = useProjectStore((state) => state.applyTemplate);
   const { user } = useAuthStore();
   const { projects, resetCurrentProject, loadProjects } = useProjectStore();
 
@@ -44,6 +61,15 @@ export const HomeScreen: React.FC = () => {
    */
   const handleCreate = () => {
     resetCurrentProject();
+    navigation.navigate('Create' as never);
+  };
+
+  /**
+   * 使用灵感模板开始创作
+   * Pre-fill a new project from the template, then open the create screen
+   */
+  const handleTemplatePress = (template: ProjectTemplate) => {
+    applyTemplate(template);
     navigation.navigate('Create' as never);
   };
 
@@ -104,10 +130,7 @@ export const HomeScreen: React.FC = () => {
               <Card
                 key={template.id}
                 style={styles.templateCard}
-                onPress={() => {
-                  // TODO: Apply template
-                  handleCreate();
-                }}
+                onPress={() => handleTemplatePress(template)}
               >
                 <Text style={styles.templateIcon}>{template.icon}</Text>
                 <Text style={styles.templateTitle}>{template.title}</Text>
