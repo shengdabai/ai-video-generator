@@ -138,7 +138,7 @@ const AppContent: React.FC = () => {
           headerTitleStyle: {
             fontWeight: '600',
           },
-          headerBackTitleVisible: false,
+          headerBackButtonDisplayMode: 'minimal',
         }}
       >
         {!isLoggedIn ? (
