@@ -25,17 +25,21 @@ test('preview loads the selected project, plays its URL and never claims an albu
   const { PreviewScreen } = load('src/screens/PreviewScreen.tsx', {
     react: h.react, 'react-native': { ...native, Alert: { alert: (...args) => alerts.push(args) }, Share: {} },
     '@react-navigation/native': { useRoute: () => ({ params: { projectId: 'selected' } }) },
-    'expo-av': { Video: 'Video', ResizeMode: { CONTAIN: 'contain' } },
+    '@/components/VideoPlayer': { VideoPlayer: 'VideoPlayer' },
     '@/services/api': { getProject: async (id) => { requested = id; return { title: 'selected title', videoUrl: 'https://example.invalid/demo.mp4', generationMode: 'demo' }; } },
   });
   h.render(PreviewScreen); h.effect(); await new Promise(setImmediate);
   const tree = h.render(PreviewScreen);
   assert.equal(requested, 'selected');
-  assert.equal(tree.find((e) => e.type === 'Video').props.source.uri, 'https://example.invalid/demo.mp4');
+  const player = tree.find((e) => e.type === 'VideoPlayer');
+  assert.equal(player.props.uri, 'https://example.invalid/demo.mp4');
   assert.ok(tree.some((e) => e.type === 'Text' && String(e.props.children).includes('演示模式')));
   const save = tree.find((e) => e.type === 'TouchableOpacity' && flatten(e).some((child) => child.props?.children === '相册保存暂未接入'));
   await save.props.onPress();
   assert.deepEqual(alerts, [['暂不可用', '相册保存尚未接入，视频未保存']]);
+  player.props.onError('fixture playback error');
+  const failed = h.render(PreviewScreen);
+  assert.ok(failed.some((e) => e.type === 'Text' && e.props.accessibilityRole === 'alert' && e.props.children === '视频播放失败，请稍后重试'));
 });
 test('preview handles fetch failure and ignores a late response after unmount', async () => {
   for (const failure of [true, false]) {
@@ -43,14 +47,14 @@ test('preview handles fetch failure and ignores a late response after unmount', 
     const { PreviewScreen } = load('src/screens/PreviewScreen.tsx', {
       react: h.react, 'react-native': { ...native, Alert: {}, Share: {} },
       '@react-navigation/native': { useRoute: () => ({ params: { projectId: 'selected' } }) },
-      'expo-av': { Video: 'Video', ResizeMode: {} },
+      '@/components/VideoPlayer': { VideoPlayer: 'VideoPlayer' },
       '@/services/api': { getProject: () => new Promise((yes, no) => { resolve = yes; reject = no; }) },
     });
     h.render(PreviewScreen); h.effect();
     if (failure) reject(new Error('fixture')); else { h.cleanup(); resolve({ videoUrl: 'https://example.invalid/late.mp4' }); }
     await new Promise(setImmediate);
     const tree = h.render(PreviewScreen);
-    assert.equal(tree.some((e) => e.type === 'Video'), false);
+    assert.equal(tree.some((e) => e.type === 'VideoPlayer'), false);
     if (failure) assert.ok(tree.some((e) => e.props?.children === '加载视频失败，请返回后重试'));
   }
 });

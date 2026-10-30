@@ -67,7 +67,7 @@ Edited storyboards are persisted, but do not affect the demo clip. Native playba
 - React Native `0.73` + Expo `50`
 - TypeScript
 - Zustand (state) · TanStack React Query (data) · React Navigation `6`
-- NativeWind (Tailwind for RN) · Reanimated · Expo SecureStore / AV / Notifications
+- NativeWind (Tailwind for RN) · Reanimated · Expo SecureStore / Video / Notifications
 
 **Backend (`/server`)**
 - Node.js + Express `4` + TypeScript
@@ -213,7 +213,7 @@ AI 视频生成器要填平它:你出想法,应用来「导演」。它把你的
 - React Native `0.73` + Expo `50`
 - TypeScript
 - Zustand(状态)· TanStack React Query(数据)· React Navigation `6`
-- NativeWind(RN 版 Tailwind)· Reanimated · Expo SecureStore / AV / Notifications
+- NativeWind(RN 版 Tailwind)· Reanimated · Expo SecureStore / Video / Notifications
 
 **后端(`/server`)**
 - Node.js + Express `4` + TypeScript
