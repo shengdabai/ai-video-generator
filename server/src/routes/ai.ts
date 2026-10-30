@@ -31,7 +31,7 @@ router.post(
       const parsed = enhanceSchema.safeParse(req.body);
       if (!parsed.success) {
         res.status(400).json(
-          apiResponse(null, parsed.error.errors[0].message, 400)
+          apiResponse(null, parsed.error.issues[0].message, 400)
         );
         return;
       }
@@ -72,7 +72,7 @@ router.post(
       const parsed = storyboardSchema.safeParse(req.body);
       if (!parsed.success) {
         res.status(400).json(
-          apiResponse(null, parsed.error.errors[0].message, 400)
+          apiResponse(null, parsed.error.issues[0].message, 400)
         );
         return;
       }

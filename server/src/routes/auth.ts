@@ -30,7 +30,7 @@ router.post('/send-code', smsLimiter, (req: Request, res: Response) => {
   try {
     const parsed = sendCodeSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(apiResponse(null, parsed.error.errors[0].message, 400));
+      res.status(400).json(apiResponse(null, parsed.error.issues[0].message, 400));
       return;
     }
 
@@ -65,7 +65,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(apiResponse(null, parsed.error.errors[0].message, 400));
+      res.status(400).json(apiResponse(null, parsed.error.issues[0].message, 400));
       return;
     }
 
@@ -120,7 +120,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(apiResponse(null, parsed.error.errors[0].message, 400));
+      res.status(400).json(apiResponse(null, parsed.error.issues[0].message, 400));
       return;
     }
 
@@ -188,7 +188,7 @@ router.post('/refresh', (req: Request, res: Response) => {
   try {
     const parsed = refreshSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json(apiResponse(null, parsed.error.errors[0].message, 400));
+      res.status(400).json(apiResponse(null, parsed.error.issues[0].message, 400));
       return;
     }
 

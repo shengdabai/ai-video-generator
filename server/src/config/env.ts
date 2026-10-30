@@ -36,7 +36,7 @@ function loadEnv(): Env {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    const formatted = result.error.format();
+    const formatted = z.treeifyError(result.error);
     throw new Error(`Environment validation failed: ${JSON.stringify(formatted)}`);
   }
 
