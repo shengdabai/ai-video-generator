@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const React = require('react');
 const load = require('./helpers/load-typescript.cjs');
 
 const makeStore = () => load('src/store/projectStore.ts', { '@/services/api': {} }).useProjectStore;
@@ -41,14 +42,22 @@ test('pressing a Home template card applies that template and opens the create s
     .map((name) => [name, name]));
   native.StyleSheet = { create: (styles) => styles };
   const { HomeScreen, TEMPLATES } = load('src/screens/HomeScreen.tsx', {
+    // The component is called directly, outside a renderer, so hooks are stubbed.
+    react: { ...React, useCallback: (callback) => callback },
     'react-native': native,
-    '@react-navigation/native': { useNavigation: () => ({ navigate: (route) => navigated.push(route) }) },
+    '@react-navigation/native': {
+      useNavigation: () => ({ navigate: (route) => navigated.push(route) }),
+      useFocusEffect: () => {},
+    },
     '@/components/ui/Card': { Card: 'Card' },
     '@/components/ui/Button': { Button: 'Button' },
     '@/store/authStore': { useAuthStore: () => ({ user: null }) },
     '@/store/projectStore': {
       useProjectStore: (selector) => {
-        const state = { projects: [], resetCurrentProject: () => {}, applyTemplate: (t) => applied.push(t) };
+        const state = {
+          projects: [], resetCurrentProject: () => {}, loadProjects: async () => {},
+          applyTemplate: (t) => applied.push(t),
+        };
         return selector ? selector(state) : state;
       },
     },
