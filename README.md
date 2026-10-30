@@ -108,6 +108,7 @@ App connects to `http://localhost:8000/api/v1` in dev mode.
 | `npm start` | node dist/index.js |
 | `npm run build` | tsc |
 | `npm run lint` | eslint . --ext .ts,.tsx |
+| `npm run type-check` | tsc --noEmit for the Expo app (root). The backend has its own `tsconfig.json`: run `npm run type-check` inside `server/`. |
 
 ## Operating Notes
 
