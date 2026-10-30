@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { useRoute } from '@react-navigation/native';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoPlayer } from '@/components/VideoPlayer';
 import apiClient from '@/services/api';
 import { VideoProject } from '@/types';
 
@@ -78,8 +78,7 @@ export const PreviewScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.playerContainer}>
           {project?.videoUrl ? (
-            <Video key={projectId} source={{ uri: project.videoUrl }} style={styles.videoPlaceholder}
-              useNativeControls resizeMode={ResizeMode.CONTAIN}
+            <VideoPlayer key={projectId} uri={project.videoUrl} style={styles.videoPlaceholder}
               onError={() => setError('视频播放失败，请稍后重试')} />
           ) : (
             <View style={styles.videoPlaceholder}>
