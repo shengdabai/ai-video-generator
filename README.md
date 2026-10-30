@@ -42,6 +42,12 @@ This repository turns content work into a repeatable workflow: inputs, processin
 - `package-lock.json`
 - `package.json`
 
+## Runtime status
+
+The backend currently runs a free demo queue returning a fixed sample clip, not prompt-generated video.
+Demo tasks do not consume credits and run at zero balance; the API marks them with `generationMode: "demo"`, and starting a task also returns `creditsCharged: 0`.
+Edited storyboards are persisted, but do not affect the demo clip. Native playback is wired; album export and audio synthesis remain unavailable.
+
 ## ✨ Features
 
 | Feature | Status | Notes |
@@ -179,6 +185,13 @@ AI 视频生成器要填平它:你出想法,应用来「导演」。它把你的
 - **视频渲染是模拟的。** 生成流水线(进度步骤、计时、状态)已经完整接好,由一个模拟 worker 在完成时返回示例片段——这里就是真实渲染 API(如 Runway、可灵)未来接入的位置。这一点如实说明,绝不误导。
 
 > 由一位中文老师以「公开构建」的方式打造,探索 AI + 媒体创作到底在哪里真正有用、哪里还不行。
+
+## 当前可运行范围
+
+当前服务端仅运行演示队列，返回固定示例视频，不生成符合提示词的视频。演示任务不扣额度，零余额也能运行。
+接口用 `generationMode: "demo"` 标识演示；启动任务还返回 `creditsCharged: 0`。界面在启动和预览时显示演示提示。
+分镜修改会随项目创建请求保存，但演示视频不使用这些分镜。预览使用原生播放器；相册保存、配音和配乐合成尚未接入。
+此改动不追溯返还历史额度；接入真实供应商和历史额度处理需要另行确认。
 
 ## ✨ 功能
 

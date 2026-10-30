@@ -12,9 +12,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
-  FlatList,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
@@ -35,7 +34,9 @@ const TEMPLATES = [
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuthStore();
-  const { projects, resetCurrentProject } = useProjectStore();
+  const { projects, resetCurrentProject, loadProjects } = useProjectStore();
+
+  useFocusEffect(React.useCallback(() => { void loadProjects(); }, [loadProjects]));
 
   /**
    * 开始创作
@@ -51,7 +52,7 @@ export const HomeScreen: React.FC = () => {
    * Navigate to project detail
    */
   const handleProjectPress = (projectId: string) => {
-    (navigation as any).navigate('ProjectDetail', { projectId });
+    (navigation as any).navigate(projects.find((p) => p.id === projectId)?.status === 'processing' ? 'Progress' : 'Preview', { projectId });
   };
 
   return (

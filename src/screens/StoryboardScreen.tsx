@@ -17,7 +17,7 @@ const SCENE_ICONS = ['🌅', '🎬', '✨', '🏙️', '🌸', '🎭'];
 
 export const StoryboardScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { currentProject, updateStoryboard, isLoading } = useProjectStore();
+  const { currentProject, updateStoryboard, deleteStoryboard, isLoading } = useProjectStore();
   const { storyboards } = currentProject;
 
   const totalDuration = storyboards.reduce((sum, sb) => sum + sb.duration, 0);
@@ -49,8 +49,7 @@ export const StoryboardScreen: React.FC = () => {
         text: '删除',
         style: 'destructive',
         onPress: () => {
-          const newStoryboards = [...storyboards];
-          newStoryboards.splice(index, 1);
+          deleteStoryboard(index);
         },
       },
     ]);

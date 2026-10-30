@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 
+import { useRoute } from '@react-navigation/native';
+import { Video, ResizeMode } from 'expo-av';
+import apiClient from '@/services/api';
+import { VideoProject } from '@/types';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VIDEO_HEIGHT = (SCREEN_WIDTH * 9) / 16;
 
@@ -22,51 +27,40 @@ interface QuickAction {
 }
 
 export const PreviewScreen: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(28);
-  const [duration] = useState(45);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const videoData = {
-    title: '城市夜雨漫步',
-    createdAt: '2024-01-15 14:30',
-    thumbnail: null,
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSeek = (progress: number) => {
-    setCurrentTime(Math.floor(progress * duration));
-  };
+  const route = useRoute();
+  const projectId = (route.params as { projectId?: string } | undefined)?.projectId;
+  const [project, setProject] = useState<VideoProject | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setProject(null);
+    setError(null);
+    if (!projectId) { setError('缺少项目编号'); return; }
+    apiClient.getProject(projectId).then((value) => {
+      if (active) setProject(value);
+    }).catch(() => { if (active) setError('加载视频失败，请返回后重试'); });
+    return () => { active = false; };
+  }, [projectId]);
+  const videoData = { title: project?.title || '视频预览', createdAt: project?.createdAt || '' };
 
   const handleQuickAction = (action: string) => {
     Alert.alert(`${action}`, `${action}功能开发中...`);
   };
 
   const handleSaveToAlbum = async () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      Alert.alert('保存成功', '视频已保存到相册');
-    }, 1500);
+    Alert.alert('暂不可用', '相册保存尚未接入，视频未保存');
   };
 
   const handleShare = async () => {
+    if (!project?.videoUrl) return;
     try {
       await Share.share({
-        message: `来看看我用 VidCraft AI 创作的视频：${videoData.title}`,
+        message: `${project?.generationMode === 'demo' ? 'VidCraft AI 演示示例' : videoData.title}：${project?.videoUrl}`,
+        url: project?.videoUrl || undefined,
         title: videoData.title,
       });
     } catch (error) {
-      console.error('Share error:', error);
+      Alert.alert('分享失败', '请稍后重试');
     }
   };
 
@@ -79,50 +73,22 @@ export const PreviewScreen: React.FC = () => {
     { id: 'regenerate', icon: '🔄', label: '重生成', onPress: () => handleQuickAction('重生成') },
   ];
 
-  const progress = currentTime / duration;
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.playerContainer}>
-          <View style={styles.videoPlaceholder}>
-            <Text style={styles.videoPlaceholderText}>📹</Text>
-            <Text style={styles.videoPlaceholderLabel}>视频播放区域</Text>
-          </View>
-          
-          <TouchableOpacity
-            style={styles.playButtonOverlay}
-            onPress={handlePlayPause}
-            activeOpacity={0.8}
-          >
-            <View style={styles.playButton}>
-              <Text style={styles.playButtonIcon}>{isPlaying ? '⏸️' : '▶️'}</Text>
+          {project?.videoUrl ? (
+            <Video key={projectId} source={{ uri: project.videoUrl }} style={styles.videoPlaceholder}
+              useNativeControls resizeMode={ResizeMode.CONTAIN}
+              onError={() => setError('视频播放失败，请稍后重试')} />
+          ) : (
+            <View style={styles.videoPlaceholder}>
+              <Text>{error || (project ? '项目尚无可播放视频' : '加载中...')}</Text>
             </View>
-          </TouchableOpacity>
+          )}
         </View>
-
-        <View style={styles.progressContainer}>
-          <TouchableOpacity
-            style={styles.progressBarWrapper}
-            onPress={(e: { nativeEvent: { locationX: number } }) => {
-              const { locationX } = e.nativeEvent;
-              const progressWidth = SCREEN_WIDTH - 32;
-              handleSeek(locationX / progressWidth);
-            }}
-            activeOpacity={1}
-          >
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${progress * 100}%` }]}>
-                <View style={styles.progressThumb} />
-              </View>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>
-              {isPlaying ? '▶️' : '⏸️'} {formatTime(currentTime)}/{formatTime(duration)}
-            </Text>
-          </View>
-        </View>
+        {error && project?.videoUrl && <Text accessibilityRole="alert">{error}</Text>}
+        {project?.generationMode === 'demo' && <Text>演示模式：此处播放示例视频，演示任务不扣额度。</Text>}
 
         <View style={styles.infoContainer}>
           <Text style={styles.videoTitle}>{videoData.title}</Text>
@@ -156,17 +122,18 @@ export const PreviewScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.actionButton, styles.saveButton]}
             onPress={handleSaveToAlbum}
-            disabled={isSaving}
+            disabled={!project?.videoUrl}
             activeOpacity={0.8}
           >
             <Text style={styles.saveButtonIcon}>💾</Text>
             <Text style={styles.saveButtonText}>
-              {isSaving ? '保存中...' : '保存到相册'}
+              相册保存暂未接入
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, styles.shareButton]}
+            disabled={!project?.videoUrl}
             onPress={handleShare}
             activeOpacity={0.8}
           >

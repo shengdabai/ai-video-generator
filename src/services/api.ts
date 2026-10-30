@@ -72,6 +72,10 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        if (config.url === '/auth/logout') {
+          // A 401 retry may have rotated the pair; revoke the currently stored refresh token.
+          config.data = { refreshToken: await SecureStore.getItemAsync(REFRESH_TOKEN_KEY) };
+        }
         return config;
       },
       (error) => Promise.reject(error)
@@ -212,7 +216,8 @@ class ApiClient {
    */
   async logout(): Promise<void> {
     try {
-      await this.client.post('/auth/logout');
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      await this.client.post('/auth/logout', { refreshToken });
     } finally {
       await this.clearTokens();
     }

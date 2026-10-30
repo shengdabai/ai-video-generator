@@ -29,15 +29,15 @@ export function generateTokens(payload: JwtPayload): {
   expiresIn: number;
 } {
   const accessToken = jwt.sign(
-    { ...payload, type: 'access' },
+    { ...payload, type: 'access', jti: crypto.randomUUID() },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions
   );
 
   const refreshToken = jwt.sign(
-    { ...payload, type: 'refresh' },
+    { ...payload, type: 'refresh', jti: crypto.randomUUID() },
     env.JWT_REFRESH_SECRET,
-    { expiresIn: env.JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
+    { expiresIn: env.JWT_REFRESH_EXPIRES_IN as string & { __brand: 'StringValue' } } as jwt.SignOptions
   );
 
   return {

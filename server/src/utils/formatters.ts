@@ -22,6 +22,7 @@ export function formatProject(row: ProjectRow) {
   return {
     id: row.id,
     userId: row.user_id,
+    generationMode: 'demo' as const,
     title: row.title,
     originalPrompt: row.original_prompt,
     enhancedPrompt: row.enhanced_prompt,

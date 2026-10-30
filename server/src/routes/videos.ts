@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { authMiddleware } from '../middleware/auth';
 import db from '../db/database';
 import { createGenerationTask, getProgress } from '../services/videoService';
@@ -18,6 +18,12 @@ const router = Router();
 // ==================== Create Project ====================
 
 const createSchema = z.object({
+  storyboards: z.array(z.object({
+    prompt: z.string().trim().min(1).max(5000),
+    duration: z.number().int().min(1).max(60),
+    cameraType: z.enum(['wide', 'medium', 'close-up', 'extreme-close-up']).nullable(),
+    movement: z.enum(['static', 'pan', 'tilt', 'zoom', 'track', 'push', 'pull']).nullable(),
+  })).min(1).max(50).optional(),
   title: z.string().max(200).optional(),
   originalPrompt: z.string().min(5, '描述至少5个字符'),
   enhancedPrompt: z.string().optional(),
@@ -49,22 +55,28 @@ router.post('/', authMiddleware, (req: Request, res: Response) => {
     const projectId = uuidv4();
     const title = data.title || `${data.originalPrompt.slice(0, 20)}...`;
 
-    db.prepare(`
-      INSERT INTO video_projects
-        (id, user_id, title, original_prompt, enhanced_prompt,
-         style_template, aspect_ratio, voice_config, music_config)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      projectId,
-      userId,
-      title,
-      data.originalPrompt,
-      data.enhancedPrompt || null,
-      data.styleTemplate,
-      data.aspectRatio,
-      JSON.stringify(data.voiceConfig || { enabled: false }),
-      JSON.stringify(data.musicConfig || { enabled: false })
-    );
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO video_projects
+          (id, user_id, title, original_prompt, enhanced_prompt,
+           style_template, aspect_ratio, voice_config, music_config)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        projectId,
+        userId,
+        title,
+        data.originalPrompt,
+        data.enhancedPrompt || null,
+        data.styleTemplate,
+        data.aspectRatio,
+        JSON.stringify(data.voiceConfig || { enabled: false }),
+        JSON.stringify(data.musicConfig || { enabled: false })
+      );
+      for (const [index, scene] of (data.storyboards || []).entries()) {
+        db.prepare(`INSERT INTO storyboards (id, project_id, scene_index, prompt, duration, camera_type, movement)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`).run(uuidv4(), projectId, index + 1, scene.prompt, scene.duration, scene.cameraType, scene.movement);
+      }
+    })();
 
     const project = db
       .prepare('SELECT * FROM video_projects WHERE id = ?')
@@ -172,19 +184,14 @@ router.post('/:id/generate', authMiddleware, (req: Request, res: Response) => {
       return;
     }
 
-    const deductResult = db
-      .prepare('UPDATE users SET credits = credits - 1 WHERE id = ? AND credits > 0')
-      .run(req.user!.userId);
+    const result = createGenerationTask(project.id, req.user!.userId);
 
-    if (deductResult.changes === 0) {
+    res.json(apiResponse(result, '演示任务已开始，不扣额度；结果为示例视频'));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'NO_CREDITS') {
       res.status(403).json(apiResponse(null, '生成次数已用完，请升级会员', 403));
       return;
     }
-
-    const result = createGenerationTask(project.id);
-
-    res.json(apiResponse(result, '视频开始生成'));
-  } catch (error) {
     res.status(500).json(apiResponse(null, '启动生成任务失败', 500));
   }
 });

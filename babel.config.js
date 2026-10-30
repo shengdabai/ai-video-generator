@@ -4,22 +4,8 @@ module.exports = function (api) {
     presets: ['babel-preset-expo'],
     plugins: [
       'nativewind/babel',
+      // Expo 50 resolves aliases from tsconfig.json; keep Reanimated last.
       'react-native-reanimated/plugin',
-      [
-        'module-resolver',
-        {
-          root: ['./'],
-          alias: {
-            '@': './src',
-            '@/components': './src/components',
-            '@/screens': './src/screens',
-            '@/services': './src/services',
-            '@/store': './src/store',
-            '@/types': './src/types',
-            '@/utils': './src/utils',
-          },
-        },
-      ],
     ],
   };
 };
