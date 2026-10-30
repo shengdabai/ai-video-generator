@@ -17,6 +17,13 @@ import {
 } from '@/types';
 import apiClient from '@/services/api';
 
+/** A Home screen template: a starter prompt plus the visual settings it implies. */
+export interface ProjectTemplate {
+  prompt: string;
+  style: VideoStyle;
+  aspectRatio: AspectRatio;
+}
+
 interface ProjectState {
   // 列表状态
   projects: VideoProject[];
@@ -58,6 +65,7 @@ interface ProjectState {
   setAspectRatio: (ratio: AspectRatio) => void;
   setVoiceConfig: (config: VoiceConfig) => void;
   setMusicConfig: (config: MusicConfig) => void;
+  applyTemplate: (template: ProjectTemplate) => void;
   
   // Actions - 生成
   startGeneration: () => Promise<string>;
@@ -285,6 +293,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((state) => ({
       currentProject: { ...state.currentProject, aspectRatio },
     }));
+  },
+
+  /**
+   * 应用灵感模板：从空白项目开始，预填提示词、风格和画幅
+   * Start a fresh project pre-filled with the template's prompt, style and aspect ratio
+   */
+  applyTemplate: ({ prompt, style, aspectRatio }: ProjectTemplate) => {
+    set({
+      currentProject: { ...initialCurrentProject, originalPrompt: prompt, style, aspectRatio },
+      generationProgress: null,
+      isGenerating: false,
+    });
   },
 
   /**
