@@ -58,9 +58,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
 
-      - name: Install dependencies
+      # server/tests/video.test.ts loads the app store (src/store) through the
+      # shared tests/helpers/load-typescript.cjs, which needs the app's
+      # typescript and zustand packages from the root node_modules.
+      - name: Install app dependencies
+        working-directory: .
+        run: npm ci
+
+      - name: Install server dependencies
         run: npm ci
 
       - name: Typecheck
