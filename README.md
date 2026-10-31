@@ -116,6 +116,7 @@ App connects to `http://localhost:8000/api/v1` in dev mode.
 - If a `.env.example` file exists, treat it as documentation only; never commit filled-in `.env` files.
 - Before publishing screenshots, demos, or client examples, remove private names, internal paths, account IDs, and API endpoints.
 - The `Repository Hygiene` workflow is a lightweight guardrail, not a replacement for product-specific tests.
+- The `Tests` workflow runs on every pull request and push to `main`: the app job runs `tsc --noEmit`, `npm test` and an iOS `expo export` bundle; the server job runs `tsc --noEmit`, `npm test` and `npm run build` inside `server/`. The server tests also load the app store, so run `npm ci` in the repository root before `npm test` in `server/`.
 
 ## Delivery Checklist
 
