@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#6366F1"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -45,7 +40,16 @@
           "color": "#6366F1"
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#6366F1",
+          "imageWidth": 200
+        }
+      ]
     ],
     "extra": {
       "eas": {
@@ -54,4 +58,3 @@
     }
   }
 }
-
